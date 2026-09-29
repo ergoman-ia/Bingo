@@ -368,6 +368,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 .confirm{background:var(--surface);border:2px solid var(--signal);border-radius:10px;padding:12px 14px;display:grid;gap:10px}
 .confirm .ct{font-weight:900;font-size:1.1rem}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;z-index:60;max-width:calc(100vw - 32px);font-weight:700;font-size:.9rem}
+#lvTitle:focus::placeholder{color:transparent}
 .rv-card.pa-card{width:min(440px,100%);text-align:left;gap:12px}
 .pa-card input{border:1.5px solid var(--line);border-radius:6px;padding:9px 11px;background:var(--ground);min-width:0}
 .reveal{position:fixed;inset:0;z-index:50;background:rgba(10,14,8,.72);display:grid;place-items:center;padding:16px}
@@ -3569,7 +3570,7 @@ async function hostStartLive(fresh){
 }
 /* 강의 개설 입력값(화면이 다시 그려져도 유지) */
 let LECDRAFT=null;
-function lecDraft(){if(!LECDRAFT)LECDRAFT={title:HOSTINFO.title||"",teams:Math.max(2,Math.min(10,S.cfg.teams||4)),names:[]};return LECDRAFT}
+function lecDraft(){if(!LECDRAFT)LECDRAFT={title:"",teams:Math.max(2,Math.min(10,S.cfg.teams||4)),names:[]};return LECDRAFT}
 $("#livePanel").addEventListener("input",e=>{const D=lecDraft();
   if(e.target.id==="lvTitle")D.title=e.target.value;
   if(e.target.dataset.tn!==undefined)D.names[+e.target.dataset.tn]=e.target.value});
@@ -3609,7 +3610,7 @@ function renderLiveHost(){
       <li>교육생은 QR 코드를 찍으면 이 강의로 바로 들어와 우리 조(또는 이름)를 고르고, 상황·위험예지·만다라트를 보며 판을 채웁니다.</li>
       <li>조별전은 모든 조가 입력을 마치면 자동으로, 개인전은 ‘빙고 시작’을 누르면 시작합니다. 호출한 위험요인은 이 화면에 크게 나타납니다.</li></ol>
       <div class="lecform">
-        <label class="lf"><span>강의 이름</span><input id="lvTitle" type="text" maxlength="40" placeholder="예: 3중대 1소대 오전 교육" value="${esc(D.title)}"></label>
+        <label class="lf"><span>강의 이름</span><input id="lvTitle" type="text" maxlength="40" placeholder="예: 육군 휴먼에러 교육" value="${esc(D.title)}"></label>
         ${c.mode==="team"?`<label class="lf" style="max-width:160px"><span>조 수</span><select id="lvTeams">${Array.from({length:9},(_,i)=>`<option value="${i+2}" ${D.teams===i+2?"selected":""}>${i+2}개 조</option>`).join("")}</select></label>
         <div class="lf" style="grid-column:1/-1"><span>조 이름(비워 두면 ‘1조, 2조…’)</span><div class="tnames" id="lvNames">${Array.from({length:D.teams},(_,i)=>`<input data-tn="${i}" type="text" maxlength="12" placeholder="${i+1}조" value="${esc(D.names[i]||"")}" aria-label="${i+1}번째 조 이름">`).join("")}</div></div>`:`<p class="hint" style="grid-column:1/-1;margin:0">개인전은 교육생이 참가할 때 자기 이름을 입력합니다.</p>`}
         <div style="grid-column:1/-1" class="row"><button class="btn primary" id="lvNew">강의 개설</button><span class="hint">사례 ${S.ci+1}: ${esc(caseShort(S.ci))} · ${c.src==="mand"?`핵심원인: ${esc(caseM(S.ci).coreThemes[S.ti].name)}`:"사례 빙고 문항"} · ${c.mode==="team"?`조별전 ${D.teams}개 조`:"개인전"} · ${c.size}×${c.size} · 목표 ${c.target}줄</span></div>
