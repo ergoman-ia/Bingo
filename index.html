@@ -368,6 +368,8 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 .confirm{background:var(--surface);border:2px solid var(--signal);border-radius:10px;padding:12px 14px;display:grid;gap:10px}
 .confirm .ct{font-weight:900;font-size:1.1rem}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;z-index:60;max-width:calc(100vw - 32px);font-weight:700;font-size:.9rem}
+.rv-card.pa-card{width:min(440px,100%);text-align:left;gap:12px}
+.pa-card input{border:1.5px solid var(--line);border-radius:6px;padding:9px 11px;background:var(--ground);min-width:0}
 .reveal{position:fixed;inset:0;z-index:50;background:rgba(10,14,8,.72);display:grid;place-items:center;padding:16px}
 .rv-card{background:var(--surface);color:var(--ink);border-radius:14px;border:3px solid var(--signal);padding:28px 26px;width:min(900px,100%);display:grid;gap:14px;text-align:center;animation:rv .35s ease}
 @keyframes rv{from{transform:scale(.92);opacity:.4}}
@@ -579,6 +581,11 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 </div>
 <div class="reveal" id="liveChoice" hidden role="dialog" aria-modal="true" aria-labelledby="lcTitle">
   <div class="rv-card lc-card" id="lcBody"></div>
+</div>
+<div class="reveal" id="pinAsk" hidden role="dialog" aria-modal="true" aria-labelledby="paTitle">
+  <div class="rv-card pa-card"><h2 id="paTitle" style="margin:0">PIN 입력</h2><p class="hint" id="paMsg" style="margin:0"></p>
+  <input id="paIn" type="password" maxlength="100" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="진행자 PIN 또는 마스터 PIN" aria-label="진행자 PIN 또는 마스터 PIN">
+  <div class="row" style="justify-content:flex-end"><button class="btn" id="paCancel">취소</button><button class="btn primary" id="paOk">확인</button></div></div>
 </div>
 <div class="reveal" id="qrBig" hidden role="dialog" aria-modal="true" aria-label="참가 QR 코드">
   <div class="rv-card"><span class="eyebrow">QR 코드를 찍어 참가하세요</span><div class="qrbig" id="qrBigImg"></div><code class="url" id="qrBigUrl"></code>
@@ -2912,6 +2919,7 @@ const caseW5=i=>S.w5[i]||DATA.W5[i];
 const caseM=i=>S.mand[i]||DATA.M[i];
 const caseShort=i=>DATA.M[i].title.replace(/^사례 \d+:\s*/,"");
 /* 표시: 사례 N: 사례명 (핵심원인: …) */
+const plainCase=(ci,core)=>`사례 ${ci+1}: ${caseShort(ci)} (${core?`핵심원인: ${core}`:"사례 빙고 문항"})`;
 const caseLabel=(ci,core)=>`사례 ${ci+1}: ${esc(caseShort(ci))} <span class="core">(${core?`핵심원인: ${esc(core)}`:"사례 빙고 문항"})</span>`;
 
 /* 사례 선택 */
@@ -3608,7 +3616,7 @@ function renderLiveHost(){
       </div>
       ${last?`<p class="hint" style="margin:0">지난 강의(코드 ${esc(CODE)})는 끝났습니다. 같은 코드로 다시 하려면 <button class="btn" id="lvRestart">이 강의에서 다시 시작</button></p>`:""}
       <details><summary style="cursor:pointer;font-weight:700">다른 PC에서 연 강의를 이어서 진행하기</summary>
-        <div class="addrow" style="max-width:640px;margin-top:8px"><input id="lvCode" type="text" maxlength="8" placeholder="강의 코드" aria-label="강의 코드" style="text-transform:uppercase"><input id="lvPin" type="text" maxlength="100" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="진행자 PIN 또는 마스터 PIN" aria-label="진행자 PIN 또는 마스터 PIN"><button class="btn" id="lvClaim">이어서 진행</button></div></details>`;
+        <div class="addrow" style="max-width:640px;margin-top:8px"><input id="lvCode" type="text" maxlength="8" placeholder="강의 코드" aria-label="강의 코드" style="text-transform:uppercase"><input id="lvPin" type="password" maxlength="100" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="진행자 PIN 또는 마스터 PIN" aria-label="진행자 PIN 또는 마스터 PIN"><button class="btn" id="lvClaim">이어서 진행</button></div></details>`;
     return;
   }
   const N=L.size*L.size,n=L.size,th=L.mcase?L.mcase.coreThemes[L.ti]:null;
@@ -3684,8 +3692,21 @@ async function showHistDetail(code,box){
     <div><b>호출 기록</b>${(L.calls||[]).length?`<ol>${L.calls.map(c=>`<li>${esc(c.text)} <span class="hint">(${esc(c.by||"")})</span></li>`).join("")}</ol>`:" 없음"}</div>`;
   box.hidden=false;
 }
+/* PIN 입력 대화창: 입력한 글자는 ●로 가려서 보입니다. 취소하면 빈 문자열을 돌려줍니다. */
+function askPin(code){
+  return new Promise(res=>{
+    const box=$("#pinAsk"),inp=$("#paIn"),prev=document.activeElement;
+    $("#paMsg").textContent=`강의 코드 ${code}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`;
+    inp.value="";box.hidden=false;inp.focus();
+    const done=v=>{box.hidden=true;inp.value="";box.onclick=null;inp.onkeydown=null;$("#paOk").onclick=null;$("#paCancel").onclick=null;if(prev&&prev.focus)prev.focus();res(v)};
+    $("#paOk").onclick=()=>done(inp.value);
+    $("#paCancel").onclick=()=>done("");
+    box.onclick=e=>{if(e.target===box)done("")};
+    inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(inp.value)}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();done("")}};
+  });
+}
 async function claimFor(code){
-  const pin=(prompt(`강의 코드 ${code}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`)||"").trim();if(!pin)return false;
+  const pin=(await askPin(code)).trim();if(!pin)return false;
   try{await fdb.doc(`lectures/${code}/hostClaims/${UID}`).set({pin,at:Date.now()});return true}
   catch(e){toast(e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return false}
 }
@@ -3717,7 +3738,7 @@ $("#lecHistBody").addEventListener("click",e=>{const b=e.target.closest("button"
 async function histLoad(code){
   const L=HIST.find(x=>x.code===code);if(!L)return;
   const done=L.phase==="done",complete=lecDone(L);
-  if(liveActive()&&CODE!==code&&!confirm("지금 진행 중인 강의가 있습니다. 불러오면 지금 강의는 마감되고 이 화면이 다른 강의로 바뀝니다(마감한 강의는 강의 기록에서 이어서 진행할 수 있습니다). 계속할까요?"))return;
+  if(liveActive()&&CODE!==code&&!confirm(`지금 진행 중인 강의가 있습니다.\n\n· 지금 진행 중: ‘${LIVE.title||"위험예지 빙고 훈련"}’ (강의 코드 ${CODE})\n   ${plainCase(LIVE.ci,LIVE.src==="mand"&&LIVE.mcase?(LIVE.mcase.coreThemes[LIVE.ti]||{}).name:"")}\n· 불러올 강의: ‘${L.title||"위험예지 빙고 훈련"}’ (강의 코드 ${code})\n   ${plainCase(L.ci||0,L.src==="mand"&&L.mcase?(L.mcase.coreThemes[L.ti]||{}).name:"")}\n\n불러오면 지금 강의는 마감되고, 화면이 불러올 강의로 바뀝니다(마감한 강의는 강의 기록에서 이어서 진행할 수 있습니다). 계속할까요?`))return;
   if(done&&!complete&&!confirm("마감된 강의를 다시 열어 이어서 진행할까요?\n스마트폰에서도 이 강의가 다시 열려, 하던 판에서 이어서 입력·호출할 수 있습니다."))return;
   if(!lecMine(L)&&!await claimFor(code))return;
   if(CODE!==code)await closeCurrentLecture();
@@ -3728,6 +3749,7 @@ async function histLoad(code){
   }
   HOSTREV=done&&complete?code:"";
   const mine=L.hostUid===UID;HOSTINFO={code,title:L.title||"",pin:mine&&HOSTINFO.code===code?HOSTINFO.pin:"",claimed:!mine};saveHost();
+  LOADSYNC=HOSTREV?"":code;   // 강의 기록에서 고른 강의이므로 ‘어느 사례로 진행할까요?’를 묻지 않고 화면을 그 강의에 맞춤
   revealCount=-1;bingoSeen=-1;G=null;setCode(code);S.cfg.fill="phone";$("#lecHist").open=false;
   toast(HOSTREV?"지난 강의 결과를 불러왔습니다. 이 화면에서만 보이며 스마트폰에는 나타나지 않습니다.":done?"강의를 다시 열었습니다. 스마트폰에서도 이어서 진행할 수 있습니다.":"이 PC에서 강의를 이어서 진행합니다.");
   window.scrollTo({top:$("#livePanel").offsetTop-80,behavior:"smooth"});
@@ -4007,10 +4029,11 @@ function caseCard(){
 const liveMine=()=>!!(LIVE&&(LIVE.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE));
 const liveSame=()=>!!(LIVE&&LIVE.ci===S.ci&&(LIVE.src!=="mand"||LIVE.ti===S.ti));
 const liveCaseLabel=()=>caseLabel(LIVE.ci,LIVE.src==="mand"&&LIVE.mcase?(LIVE.mcase.coreThemes[LIVE.ti]||{}).name:"");
-let lcSid="";
+let lcSid="",LOADSYNC="";
 function askLiveChoice(){   // 강의마다 처음 한 번만(앱 주소를 새로 고친 뒤, 다른 PC에서 이어서 진행할 때)
   if(!ADMIN||ROLE!=="host"||!liveActive()||lcSid===LIVE.sid)return;
-  lcSid=LIVE.sid;if(liveMine()&&!liveSame())openLiveChoice();
+  lcSid=LIVE.sid;
+  if(LOADSYNC&&LOADSYNC===CODE){LOADSYNC="";if(!liveSame())syncHostToLive();return}if(liveMine()&&!liveSame())openLiveChoice();
 }
 function openLiveChoice(){
   if(!liveActive())return;
