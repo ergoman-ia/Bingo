@@ -3313,10 +3313,10 @@ function writeS(S2){LIVE=S2;onLive();return sRef().set(S2).catch(fsErr)}
 /* 예전 서버 함수와 같은 모양의 함수들 */
 const API={
   async apiClaim(code,pin){
-    code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");pin=String(pin||"").trim();
+    code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");pin=String(pin||"").normalize("NFC").trim();
     if(!code||!pin)return {err:"강의 코드와 PIN을 모두 입력해 주세요."};
     try{const snap=await fdb.doc(`lectures/${code}`).get();if(!snap.exists)return {err:"그 코드의 강의가 없습니다."};
-      await fdb.doc(`lectures/${code}/hostClaims/${UID}`).set({pin,at:Date.now()});
+      await putClaim(code,pin);
       return {ok:true,code,lec:snap.data()}}
     catch(e){return {err:e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"연결하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
   },
@@ -3705,9 +3705,17 @@ function askPin(code){
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(inp.value)}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();done("")}};
   });
 }
+/* 진행 권한 받기: 이 PC가 이미 이 강의의 권한을 받은 적이 있으면 그대로 씁니다.
+   (보안 규칙은 권한 문서를 새로 만드는 것만 허용하고 고쳐 쓰는 것은 막기 때문에,
+    같은 강의에 두 번째로 PIN을 넣으면 PIN이 맞아도 거절되던 문제를 막습니다.) */
+async function putClaim(code,pin){
+  const ref=fdb.doc(`lectures/${code}/hostClaims/${UID}`);
+  let had=false;try{had=(await ref.get()).exists}catch(e){}
+  if(!had)await ref.set({pin,at:Date.now()});
+}
 async function claimFor(code){
-  const pin=(await askPin(code)).trim();if(!pin)return false;
-  try{await fdb.doc(`lectures/${code}/hostClaims/${UID}`).set({pin,at:Date.now()});return true}
+  const pin=(await askPin(code)).normalize("NFC").trim();if(!pin)return false;
+  try{await putClaim(code,pin);return true}
   catch(e){toast(e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return false}
 }
 async function deleteLecture(L){
