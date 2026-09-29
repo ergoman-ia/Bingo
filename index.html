@@ -3676,7 +3676,7 @@ async function loadHist(){
 }
 function renderHist(){
   const rows=HIST;
-  $("#lecHistBody").innerHTML=`<p class="hint" style="margin:0">Firestore에 저장된 강의 목록입니다. 이 PC에서 연 강의(또는 진행자 PIN으로 이어서 진행한 강의)는 바로 삭제할 수 있고, 다른 PC에서 연 강의는 진행자 PIN을 넣어야 삭제됩니다. 삭제하면 판·호출 기록까지 모두 지워지며 되돌릴 수 없습니다.</p>
+  $("#lecHistBody").innerHTML=`<p class="hint" style="margin:0">Firestore에 저장된 강의 목록입니다. 강의 기록은 어느 PC에서든 마스터 PIN을 넣어야 삭제됩니다. 삭제하면 판·호출 기록까지 모두 지워지며 되돌릴 수 없습니다.</p>
     <div class="lh-list">${rows.map(L=>{const res=L.results||{},wins=Object.keys(res).filter(k=>res[k]&&res[k].rank).length;
       return `<div class="lh-row${L.open?" open":""}" data-code="${esc(L.code)}"><div class="lh-top"><b>${esc(L.title||"위험예지 빙고 훈련")} <span class="lh-badge">${L.open?"진행 중":lecDone(L)?"끝남 · 빙고 완료":"끝남 · 빙고 미완료"}</span></b>
         <span class="row"><button class="btn" data-lhview="${esc(L.code)}">자세히</button><button class="btn" data-lhload="${esc(L.code)}">${L.phase==="done"?(lecDone(L)?"결과 보기":"이어서 진행"):"이 PC에서 진행"}</button><button class="btn ghost" data-lhdel="${esc(L.code)}">삭제</button></span></div>
@@ -3692,11 +3692,14 @@ async function showHistDetail(code,box){
     <div><b>호출 기록</b>${(L.calls||[]).length?`<ol>${L.calls.map(c=>`<li>${esc(c.text)} <span class="hint">(${esc(c.by||"")})</span></li>`).join("")}</ol>`:" 없음"}</div>`;
   box.hidden=false;
 }
-/* PIN 입력 대화창: 입력한 글자는 ●로 가려서 보입니다. 취소하면 빈 문자열을 돌려줍니다. */
-function askPin(code){
+/* PIN 입력 대화창: 입력한 글자는 ●로 가려서 보입니다. 취소하면 빈 문자열을 돌려줍니다.
+   kind가 "master"이면 마스터 PIN만 묻습니다(강의 기록 삭제). */
+function askPin(code,kind){
   return new Promise(res=>{
-    const box=$("#pinAsk"),inp=$("#paIn"),prev=document.activeElement;
-    $("#paMsg").textContent=`강의 코드 ${code}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`;
+    const box=$("#pinAsk"),inp=$("#paIn"),prev=document.activeElement,m=kind==="master";
+    $("#paTitle").textContent=m?"마스터 PIN 확인":"PIN 입력";
+    $("#paMsg").textContent=m?`강의 코드 ${code}의 기록을 삭제하려면 마스터 PIN을 입력하세요.`:`강의 코드 ${code}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`;
+    inp.placeholder=m?"마스터 PIN":"진행자 PIN 또는 마스터 PIN";inp.setAttribute("aria-label",inp.placeholder);
     inp.value="";box.hidden=false;inp.focus();
     const done=v=>{box.hidden=true;inp.value="";box.onclick=null;inp.onkeydown=null;$("#paOk").onclick=null;$("#paCancel").onclick=null;if(prev&&prev.focus)prev.focus();res(v)};
     $("#paOk").onclick=()=>done(inp.value);
@@ -3713,6 +3716,12 @@ async function putClaim(code,pin){
   let had=false;try{had=(await ref.get()).exists}catch(e){}
   if(!had)await ref.set({pin,at:Date.now()});
 }
+/* 마스터 PIN 확인(삭제용): 삭제할 때마다 새로 확인하도록, 전에 받은 확인 문서는 지우고 다시 만듭니다. */
+async function putMaster(code,pin){
+  const ref=fdb.doc(`lectures/${code}/masterOk/${UID}`);
+  try{await ref.delete()}catch(e){}
+  await ref.set({pin,at:Date.now()});
+}
 async function claimFor(code){
   const pin=(await askPin(code)).normalize("NFC").trim();if(!pin)return false;
   try{await putClaim(code,pin);return true}
@@ -3721,17 +3730,21 @@ async function claimFor(code){
 async function deleteLecture(L){
   const code=L.code,sids=[...new Set([...(L.sids||[]),L.sid].filter(Boolean))];
   for(const sid of sids){const path=`lectures/${code}/sessions/${sid}/boards`;const q=await fdb.collection(path).get();for(const d of q.docs)await fdb.doc(`${path}/${d.id}`).delete()}
-  for(const x of ["meta/roster","secret/pin"]){try{await fdb.doc(`lectures/${code}/${x}`).delete()}catch(e){}}
+  for(const x of ["meta/roster","meta/hb","secret/pin"]){try{await fdb.doc(`lectures/${code}/${x}`).delete()}catch(e){}}
   try{const q=await fdb.collection(`lectures/${code}/hostClaims`).get();for(const d of q.docs)if(d.id!==UID)await fdb.doc(`lectures/${code}/hostClaims/${d.id}`).delete()}catch(e){}
   await fdb.doc(`lectures/${code}`).delete();
   try{await fdb.doc(`lectures/${code}/hostClaims/${UID}`).delete()}catch(e){}
+  try{await fdb.doc(`lectures/${code}/masterOk/${UID}`).delete()}catch(e){}
   if(CODE===code){HOSTINFO={};saveHost();setCode("");G=null;renderBingo()}
 }
 async function histDelete(code){
   const L=HIST.find(x=>x.code===code);if(!L)return;
   if(!confirm(`‘${L.title||code}’(강의 코드 ${code}) 기록을 삭제할까요?${L.open?"\n진행 중인 강의입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
-  if(!lecMine(L)&&!await claimFor(code))return;
-  try{await deleteLecture(L);toast("강의 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 진행자 PIN을 확인하거나 보안 규칙(firestore.rules)을 새로 배포했는지 확인해 주세요.":"삭제하지 못했습니다. 인터넷 연결을 확인해 주세요.")}
+  // 삭제는 강의를 연 PC여도 항상 마스터 PIN을 확인합니다.
+  const pin=(await askPin(code,"master")).normalize("NFC").trim();if(!pin)return;
+  try{await putMaster(code,pin)}
+  catch(e){toast(e&&e.code==="permission-denied"?"마스터 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return}
+  try{await deleteLecture(L);toast("강의 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 보안 규칙(firestore.rules)을 새로 게시했는지 확인해 주세요.":"삭제하지 못했습니다. 인터넷 연결을 확인해 주세요.")}
   loadHist();
 }
 $("#lecHist").addEventListener("toggle",()=>{if($("#lecHist").open)loadHist()});
@@ -4099,6 +4112,9 @@ async function liveChoice(act){
   if(act==="keep"){syncHostToLive();toast("열린 강의의 사례로 화면을 맞췄습니다. 이어서 진행하세요.");return}
   if(act==="fresh"){   // 앱을 새로 열었을 때의 확인 창에서 ‘마감하고 새로 시작’: 처음 단계(상황파악)부터
     await closeCurrentLecture();
+    // 마감한 강의와의 연결을 끊고 강의 개설 입력값(강의 이름·조 이름)도 비움
+    //   (그대로 두면 다음에 새로 고침했을 때 마감한 강의의 이름이 다시 채워짐)
+    HOSTREV="";HOSTINFO={};saveHost();setCode("");LECDRAFT={title:"",teams:4,names:[]};
     // 새로 시작은 항상 처음 상태로: 사례 1, 처음 설정(조별전·만다라트 문항·5×5·4개 조·목표 3줄)
     S.ci=0;S.ti=0;S.sub=0;caseSel.value=0;
     Object.assign(S.cfg,{mode:"team",src:"mand",size:5,teams:4,target:3,weight:false,fill:"phone"});
