@@ -3830,7 +3830,7 @@ function flushBingo(){if(!pendingBingo)return;const p=pendingBingo;pendingBingo=
   if(G&&G.live&&LIVE&&(LIVE.ack||0)<p.n&&ADMIN)writeS({...clone(LIVE),ack:p.n})}
 $("#rvClose").onclick=closeReveal;
 $("#reveal").addEventListener("click",e=>{if(e.target.id==="reveal")closeReveal()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#liveChoice").hidden){closeLiveChoice();return}if(!$("#bingoModal").hidden)$("#bingoModal").hidden=true;else closeReveal();$("#qrBig").hidden=true}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#liveChoice").hidden){dismissLiveChoice();return}if(!$("#bingoModal").hidden)$("#bingoModal").hidden=true;else closeReveal();$("#qrBig").hidden=true}});
 
 /* ── 참가자(스마트폰) 화면 ── */
 function applyLiveContext(){
@@ -4013,7 +4013,7 @@ function initLive(){
   fauth.onAuthStateChanged(u=>{
     if(!u){fauth.signInAnonymously().catch(()=>toast("Firebase에서 ‘익명’ 로그인을 켜 주세요(설치 안내 참고)."));return}
     if(UID===u.uid)return;UID=u.uid;
-    if(ADMIN){setRole("host");S.cfg.fill="phone";setCode(HOSTINFO.code||"");newGame();go("w5");closeStaleMine()}
+    if(ADMIN){setRole("host");S.cfg.fill="phone";BOOTCODE=HOSTINFO.code||"";setCode(HOSTINFO.code||"");newGame();go("w5");closeStaleMine()}
     else{setRole("team");go("w5");const c=URLCODE||P.code||"";if(URLCODE){P.code=URLCODE;saveP()}setCode(c);if(!c)watchLectures(true)}
   });
 }
@@ -4048,27 +4048,44 @@ function caseCard(){
 const liveMine=()=>!!(LIVE&&(LIVE.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE));
 const liveSame=()=>!!(LIVE&&LIVE.ci===S.ci&&(LIVE.src!=="mand"||LIVE.ti===S.ti));
 const liveCaseLabel=()=>caseLabel(LIVE.ci,LIVE.src==="mand"&&LIVE.mcase?(LIVE.mcase.coreThemes[LIVE.ti]||{}).name:"");
-let lcKey="",LOADSYNC="";
-/* 교수 PC가 강의에 연결될 때(새로 고침, 강의 코드·PIN으로 이어서 진행, 강의 기록에서 불러오기) 처음 한 번:
-   묻지 않고 위쪽 사례·핵심원인·진행 방식을 그 강의에 맞춥니다.
-   ‘어느 사례로 진행할까요?’ 창은 강의 도중 위쪽 사례를 직접 바꿨을 때만 뜹니다(caseSel.onchange). */
+let lcKey="",LOADSYNC="",BOOTCODE="",LCMODE="";
+/* 교수 PC가 강의에 연결될 때 처음 한 번, 위쪽 사례·핵심원인·진행 방식을 그 강의에 맞춥니다.
+   - 앱을 새로 열었을 때(새로 고침, 오랜만에 실행): 끝내지 않은 강의가 있으면 창을 띄워
+     ‘이어서 진행’과 ‘마감하고 새 강의 개설’ 중에서 고르게 합니다.
+   - 강의 기록에서 불러오거나 강의 코드·PIN으로 이어서 진행할 때: 이미 고른 것이므로 묻지 않습니다.
+   - ‘어느 사례로 진행할까요?’ 창은 강의 도중 위쪽 사례를 직접 바꿨을 때만 뜹니다(caseSel.onchange). */
 function askLiveChoice(){
   if(!ADMIN||ROLE!=="host"||!LIVE||!LIVE.sid)return;
+  const boot=!!BOOTCODE&&BOOTCODE===CODE;if(boot)BOOTCODE="";
   if(!liveActive()&&HOSTREV!==CODE)return;
   const k=CODE+"/"+LIVE.sid;if(lcKey===k)return;lcKey=k;
   const quiet=LOADSYNC===CODE;LOADSYNC="";
   const diff=!liveSame();syncHostToLive();
+  if(boot&&!quiet&&liveActive()&&liveMine()){openResumeChoice();return}
   if(diff&&!quiet)toast(`화면을 진행 중이던 강의 ‘${LIVE.title||"위험예지 빙고 훈련"}’(사례 ${LIVE.ci+1})에 맞췄습니다.`);
 }
+/* 앱을 새로 열었을 때 끝내지 않은 강의가 있으면 띄우는 창 */
+function openResumeChoice(){
+  const L=LIVE,calls=(L.calls||[]).length;LCMODE="resume";
+  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">진행 중이던 강의가 있습니다</span><h2 id="lcTitle">기존에 개설되어 진행되고 있던 강의가 다음과 같이 있습니다</h2></div></div>
+    <div class="lc-info"><span>강의 이름</span><b>${esc(L.title||"위험예지 빙고 훈련")}</b><div class="case-label">${liveCaseLabel()}</div>
+      <span>강의 코드 ${esc(CODE)} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 목표 ${L.target}줄 · ${L.phase==="pick"?"판 짜는 중":`빙고 진행 중(호출 ${calls}번)`}</span>
+      <span>개설 ${fmtDT(L.opened)} · 마지막 활동 ${fmtDT(L.alive)}</span></div>
+    <p style="margin:0">이 강의를 이어서 진행할까요, 아니면 이 강의를 마감하고 새 강의를 개설할까요? 마감한 강의는 나중에 강의 기록에서 이어서 진행할 수 있습니다.</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-lc="new">마감하고 새 강의 개설</button><button class="btn primary" data-lc="resume">이어서 진행</button></div>`;
+  $("#liveChoice").hidden=false;const r=$("#lcBody [data-lc=resume]");if(r)r.focus();
+}
+/* 바깥을 누르거나 Esc를 눌러 창을 닫을 때: 새로 연 앱의 확인 창이면 ‘이어서 진행’으로 봅니다(아무것도 지워지지 않도록). */
+function dismissLiveChoice(){if(LCMODE==="resume"){liveChoice("resume");return}closeLiveChoice()}
 function openLiveChoice(){
   if(!liveActive())return;
   const L=LIVE,now=caseLabel(S.ci,S.cfg.src==="mand"?caseM(S.ci).coreThemes[S.ti].name:"");
   $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">진행 중인 강의가 있습니다</span><h2 id="lcTitle">어느 사례로 진행할까요?</h2></div><button class="btn ghost" data-lc="later">나중에</button></div>
     <div class="lc-info lc-row"><div><span>열린 강의 ‘${esc(L.title||"위험예지 빙고 훈련")}’ · ${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · 참가자 화면에 보이는 사례</span><div class="case-label">${liveCaseLabel()}</div></div><button class="btn primary" data-lc="keep">이 강의 계속</button></div>
     <div class="lc-info lc-row"><div><span>위쪽에서 지금 고른 사례 · 고르면 열린 강의는 마감됩니다</span><div class="case-label">${now}</div></div><button class="btn" data-lc="new">이 사례로 새 강의</button></div>`;
-  $("#liveChoice").hidden=false;const k=$("#lcBody [data-lc=keep]");if(k)k.focus();
+  LCMODE="choice";$("#liveChoice").hidden=false;const k=$("#lcBody [data-lc=keep]");if(k)k.focus();
 }
-function closeLiveChoice(){$("#liveChoice").hidden=true}
+function closeLiveChoice(){$("#liveChoice").hidden=true;LCMODE=""}
 function syncHostToLive(){   // 교수 화면의 사례·핵심원인·진행 방식을 열린 강의에 맞춤
   if(!LIVE)return;const L=LIVE;
   S.ci=L.ci;S.ti=L.ti||0;S.sub=0;caseSel.value=S.ci;
@@ -4080,6 +4097,8 @@ async function liveChoice(act){
   if(!liveActive()||!liveMine()){closeLiveChoice();toast("이 PC에는 이 강의의 진행 권한이 없습니다.");return}
   closeLiveChoice();
   if(act==="keep"){syncHostToLive();toast("열린 강의의 사례로 화면을 맞췄습니다. 이어서 진행하세요.");return}
+  if(act==="resume"){syncHostToLive();go("bingo");toast(`‘${LIVE.title||"위험예지 빙고 훈련"}’ 강의를 이어서 진행합니다.`);
+    setTimeout(()=>{const p=$("#livePanel");if(p)p.scrollIntoView({behavior:"smooth",block:"start"})},300);return}
   if(act==="new"){
     await closeCurrentLecture();
     go("bingo");
@@ -4087,7 +4106,7 @@ async function liveChoice(act){
     setTimeout(()=>{const p=$("#livePanel");if(p)p.scrollIntoView({behavior:"smooth",block:"start"});const t=$("#lvTitle");if(t)t.focus({preventScroll:true})},700);
   }
 }
-$("#liveChoice").addEventListener("click",e=>{if(e.target.id==="liveChoice"){closeLiveChoice();return}const b=e.target.closest("[data-lc]");if(b)liveChoice(b.dataset.lc)});
+$("#liveChoice").addEventListener("click",e=>{if(e.target.id==="liveChoice"){dismissLiveChoice();return}const b=e.target.closest("[data-lc]");if(b)liveChoice(b.dataset.lc)});
 $("#bCase").addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(b)liveChoice(b.dataset.lc)});
 
 function renderAll(){renderW5();renderKYT();renderMand()}
