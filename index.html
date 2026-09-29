@@ -4071,8 +4071,8 @@ function openResumeChoice(){
     <div class="lc-info"><span>강의 이름</span><b>${esc(L.title||"위험예지 빙고 훈련")}</b><div class="case-label">${liveCaseLabel()}</div>
       <span>강의 코드 ${esc(CODE)} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 목표 ${L.target}줄 · ${L.phase==="pick"?"판 짜는 중":`빙고 진행 중(호출 ${calls}번)`}</span>
       <span>개설 ${fmtDT(L.opened)} · 마지막 활동 ${fmtDT(L.alive)}</span></div>
-    <p style="margin:0">이 강의를 이어서 진행할까요, 아니면 이 강의를 마감하고 새 강의를 개설할까요? 마감한 강의는 나중에 강의 기록에서 이어서 진행할 수 있습니다.</p>
-    <div class="row" style="justify-content:flex-end"><button class="btn" data-lc="new">마감하고 새 강의 개설</button><button class="btn primary" data-lc="resume">이어서 진행</button></div>`;
+    <p style="margin:0">이 강의를 이어서 진행할까요, 아니면 이 강의를 마감하고 상황파악부터 새로 시작할까요? 마감한 강의는 나중에 강의 기록에서 이어서 진행할 수 있습니다.</p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-lc="fresh">마감하고 새로 시작</button><button class="btn primary" data-lc="resume">이어서 진행</button></div>`;
   $("#liveChoice").hidden=false;const r=$("#lcBody [data-lc=resume]");if(r)r.focus();
 }
 /* 바깥을 누르거나 Esc를 눌러 창을 닫을 때: 새로 연 앱의 확인 창이면 ‘이어서 진행’으로 봅니다(아무것도 지워지지 않도록). */
@@ -4097,6 +4097,11 @@ async function liveChoice(act){
   if(!liveActive()||!liveMine()){closeLiveChoice();toast("이 PC에는 이 강의의 진행 권한이 없습니다.");return}
   closeLiveChoice();
   if(act==="keep"){syncHostToLive();toast("열린 강의의 사례로 화면을 맞췄습니다. 이어서 진행하세요.");return}
+  if(act==="fresh"){   // 앱을 새로 열었을 때의 확인 창에서 ‘마감하고 새로 시작’: 처음 단계(상황파악)부터
+    await closeCurrentLecture();
+    go("w5");window.scrollTo({top:0,behavior:"smooth"});
+    toast("강의를 마감했습니다. 상황파악부터 새로 시작하세요. 사례는 위쪽에서 바꿀 수 있습니다.");
+    return}
   if(act==="resume"){syncHostToLive();go("bingo");toast(`‘${LIVE.title||"위험예지 빙고 훈련"}’ 강의를 이어서 진행합니다.`);
     setTimeout(()=>{const p=$("#livePanel");if(p)p.scrollIntoView({behavior:"smooth",block:"start"})},300);return}
   if(act==="new"){
