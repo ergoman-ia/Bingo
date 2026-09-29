@@ -3305,12 +3305,12 @@ function writeS(S2){LIVE=S2;onLive();return sRef().set(S2).catch(fsErr)}
 /* 예전 서버 함수와 같은 모양의 함수들 */
 const API={
   async apiClaim(code,pin){
-    code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");pin=String(pin||"").replace(/\D/g,"");
-    if(!code||!pin)return {err:"강의 코드와 진행자 PIN을 모두 입력해 주세요."};
+    code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");pin=String(pin||"").trim();
+    if(!code||!pin)return {err:"강의 코드와 PIN을 모두 입력해 주세요."};
     try{const snap=await fdb.doc(`lectures/${code}`).get();if(!snap.exists)return {err:"그 코드의 강의가 없습니다."};
       await fdb.doc(`lectures/${code}/hostClaims/${UID}`).set({pin,at:Date.now()});
       HOSTINFO={code,pin,claimed:true,title:snap.data().title||""};saveHost();return {ok:true,code}}
-    catch(e){return {err:e&&e.code==="permission-denied"?"진행자 PIN이 맞지 않습니다.":"연결하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
+    catch(e){return {err:e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"연결하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
   },
   async apiJoin(q){
     const L=LIVE;if(!L||q.sid!==L.sid||!liveActive())return {err:"훈련이 새로 시작되었습니다. 화면을 새로 고쳐 주세요."};
@@ -3608,7 +3608,7 @@ function renderLiveHost(){
       </div>
       ${last?`<p class="hint" style="margin:0">지난 강의(코드 ${esc(CODE)})는 끝났습니다. 같은 코드로 다시 하려면 <button class="btn" id="lvRestart">이 강의에서 다시 시작</button></p>`:""}
       <details><summary style="cursor:pointer;font-weight:700">다른 PC에서 연 강의를 이어서 진행하기</summary>
-        <div class="addrow" style="max-width:640px;margin-top:8px"><input id="lvCode" type="text" maxlength="8" placeholder="강의 코드" aria-label="강의 코드" style="text-transform:uppercase"><input id="lvPin" type="text" inputmode="numeric" maxlength="6" placeholder="진행자 PIN 6자리" aria-label="진행자 PIN"><button class="btn" id="lvClaim">이어서 진행</button></div></details>`;
+        <div class="addrow" style="max-width:640px;margin-top:8px"><input id="lvCode" type="text" maxlength="8" placeholder="강의 코드" aria-label="강의 코드" style="text-transform:uppercase"><input id="lvPin" type="text" maxlength="100" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="진행자 PIN 또는 마스터 PIN" aria-label="진행자 PIN 또는 마스터 PIN"><button class="btn" id="lvClaim">이어서 진행</button></div></details>`;
     return;
   }
   const N=L.size*L.size,n=L.size,th=L.mcase?L.mcase.coreThemes[L.ti]:null;
@@ -3685,9 +3685,9 @@ async function showHistDetail(code,box){
   box.hidden=false;
 }
 async function claimFor(code){
-  const pin=(prompt(`강의 코드 ${code}의 진행자 PIN 6자리를 입력하세요.`)||"").replace(/\D/g,"");if(!pin)return false;
+  const pin=(prompt(`강의 코드 ${code}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`)||"").trim();if(!pin)return false;
   try{await fdb.doc(`lectures/${code}/hostClaims/${UID}`).set({pin,at:Date.now()});return true}
-  catch(e){toast(e&&e.code==="permission-denied"?"진행자 PIN이 맞지 않습니다.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return false}
+  catch(e){toast(e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return false}
 }
 async function deleteLecture(L){
   const code=L.code,sids=[...new Set([...(L.sids||[]),L.sid].filter(Boolean))];
