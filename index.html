@@ -3317,7 +3317,7 @@ const API={
     if(!code||!pin)return {err:"강의 코드와 PIN을 모두 입력해 주세요."};
     try{const snap=await fdb.doc(`lectures/${code}`).get();if(!snap.exists)return {err:"그 코드의 강의가 없습니다."};
       await fdb.doc(`lectures/${code}/hostClaims/${UID}`).set({pin,at:Date.now()});
-      HOSTINFO={code,pin,claimed:true,title:snap.data().title||""};saveHost();return {ok:true,code}}
+      return {ok:true,code,lec:snap.data()}}
     catch(e){return {err:e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"연결하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
   },
   async apiJoin(q){
@@ -3651,7 +3651,7 @@ $("#livePanel").addEventListener("click",e=>{
   if(b.id==="lvNew")hostStartLive(true);
   if(b.id==="lvNoDevFill")fillNoDevice();
   if(b.id==="lvRestart")hostStartLive(false);
-  if(b.id==="lvClaim"){(async()=>{const r=await API.apiClaim($("#lvCode").value,$("#lvPin").value);if(r.err){toast(r.err);return}setCode(r.code);S.cfg.fill="phone";toast("이 PC에서 강의를 이어서 진행합니다.")})()}
+  if(b.id==="lvClaim"){(async()=>{const r=await API.apiClaim($("#lvCode").value,$("#lvPin").value);if(r.err){toast(r.err);return}$("#lvPin").value="";await openLecture({...r.lec,code:r.code},true)})()}
   if(b.id==="lvPlay")adm("play");
   if(b.id==="lvRevClose")reviewClose();
   if(b.id==="lvReopen"&&confirm("호출 기록을 지우고 판 짜기로 돌아갈까요? 모든 판이 ‘입력 중’으로 바뀝니다."))adm("reopen");
@@ -3735,12 +3735,22 @@ $("#lecHistBody").addEventListener("click",e=>{const b=e.target.closest("button"
 /* 강의 기록에서 불러오기
    - 빙고를 완료한 강의: 교수 화면에서만 결과를 봄(스마트폰에는 보이지 않음)
    - 빙고를 완료하지 못하고 마감한 강의: 다시 열어 이어서 진행(스마트폰도 그 강의를 다시 불러와 입력·호출) */
-async function histLoad(code){
-  const L=HIST.find(x=>x.code===code);if(!L)return;
-  const done=L.phase==="done",complete=lecDone(L);
-  if(liveActive()&&CODE!==code&&!confirm(`지금 진행 중인 강의가 있습니다.\n\n· 지금 진행 중: ‘${LIVE.title||"위험예지 빙고 훈련"}’ (강의 코드 ${CODE})\n   ${plainCase(LIVE.ci,LIVE.src==="mand"&&LIVE.mcase?(LIVE.mcase.coreThemes[LIVE.ti]||{}).name:"")}\n· 불러올 강의: ‘${L.title||"위험예지 빙고 훈련"}’ (강의 코드 ${code})\n   ${plainCase(L.ci||0,L.src==="mand"&&L.mcase?(L.mcase.coreThemes[L.ti]||{}).name:"")}\n\n불러오면 지금 강의는 마감되고, 화면이 불러올 강의로 바뀝니다(마감한 강의는 강의 기록에서 이어서 진행할 수 있습니다). 계속할까요?`))return;
-  if(done&&!complete&&!confirm("마감된 강의를 다시 열어 이어서 진행할까요?\n스마트폰에서도 이 강의가 다시 열려, 하던 판에서 이어서 입력·호출할 수 있습니다."))return;
-  if(!lecMine(L)&&!await claimFor(code))return;
+/* 강의 불러오기(강의 기록에서 고르거나, 강의 코드·PIN으로 이어서 진행할 때 모두 이 함수를 씁니다)
+   - 불러온 강의가 기준입니다. 위쪽 사례·핵심원인·진행 방식은 불러온 강의에 자동으로 맞춥니다.
+   - 확인 창 하나에 ‘지금 하던 것’(진행 중인 강의 또는 이 PC에서 짜던 판)과 ‘불러올 강의’를 나란히 보여 줍니다.
+   - 빙고를 마친 강의는 결과만 이 화면에서 보고, 빙고를 마치지 못하고 마감한 강의는 다시 열어 이어서 진행합니다. */
+const lecCase=x=>plainCase(x.ci||0,x.src==="mand"&&x.mcase?(x.mcase.coreThemes[x.ti]||{}).name:"");
+const lecName=(x,code)=>`‘${x.title||"위험예지 빙고 훈련"}’(강의 코드 ${code})`;
+async function openLecture(L,claimed){
+  const code=L.code,done=L.phase==="done",complete=lecDone(L);
+  const lines=[];let warn="";
+  if(liveActive()&&CODE!==code){lines.push(`· 지금 진행 중: ${lecName(LIVE,CODE)}`,`   ${lecCase(LIVE)}`);warn="지금 강의는 마감됩니다(강의 기록에서 이어서 진행할 수 있습니다).\n"}
+  else if(hasPicks()){lines.push(`· 이 PC에서 짜던 판: ${plainCase(S.ci,S.cfg.src==="mand"?caseM(S.ci).coreThemes[S.ti].name:"")}`);warn="이 PC에서 짜던 판은 지워집니다.\n"}
+  lines.push(`· 불러올 강의: ${lecName(L,code)}`,`   ${lecCase(L)}`);
+  const what=done?(complete?"빙고를 마친 강의라 결과만 이 화면에서 봅니다(스마트폰에는 보이지 않습니다).":"마감된 강의라 다시 열어 하던 판에서 이어서 진행합니다(스마트폰에서도 다시 열립니다).")
+    :"이 PC에서 이 강의를 이어서 진행합니다.";
+  if(!confirm(`${lines.join("\n")}\n\n${what}\n${warn}불러올까요?`))return;
+  if(!claimed&&!lecMine(L)&&!await claimFor(code))return;
   if(CODE!==code)await closeCurrentLecture();
   if(done&&!complete){
     const ph=L.endedPhase||((L.calls||[]).length?"play":"pick");
@@ -3749,11 +3759,12 @@ async function histLoad(code){
   }
   HOSTREV=done&&complete?code:"";
   const mine=L.hostUid===UID;HOSTINFO={code,title:L.title||"",pin:mine&&HOSTINFO.code===code?HOSTINFO.pin:"",claimed:!mine};saveHost();
-  LOADSYNC=HOSTREV?"":code;   // 강의 기록에서 고른 강의이므로 ‘어느 사례로 진행할까요?’를 묻지 않고 화면을 그 강의에 맞춤
+  LOADSYNC=code;lcKey="";   // 연결되면 확인 창 없이 위쪽 사례·진행 방식을 이 강의에 맞춤
   revealCount=-1;bingoSeen=-1;G=null;setCode(code);S.cfg.fill="phone";$("#lecHist").open=false;
-  toast(HOSTREV?"지난 강의 결과를 불러왔습니다. 이 화면에서만 보이며 스마트폰에는 나타나지 않습니다.":done?"강의를 다시 열었습니다. 스마트폰에서도 이어서 진행할 수 있습니다.":"이 PC에서 강의를 이어서 진행합니다.");
+  toast(`${lecName(L,code)}을(를) 불러왔습니다. `+(HOSTREV?"결과는 이 화면에서만 보입니다.":done?"스마트폰에서도 이어서 진행할 수 있습니다.":"이 PC에서 이어서 진행합니다."));
   window.scrollTo({top:$("#livePanel").offsetTop-80,behavior:"smooth"});
 }
+async function histLoad(code){const L=HIST.find(x=>x.code===code);if(L)await openLecture(L,false)}
 async function reviewClose(){
   HOSTREV="";G=null;if(HOSTINFO.code===CODE){HOSTINFO={};saveHost()}setCode("");toast("결과 보기를 닫았습니다.");
 }
@@ -4029,11 +4040,17 @@ function caseCard(){
 const liveMine=()=>!!(LIVE&&(LIVE.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE));
 const liveSame=()=>!!(LIVE&&LIVE.ci===S.ci&&(LIVE.src!=="mand"||LIVE.ti===S.ti));
 const liveCaseLabel=()=>caseLabel(LIVE.ci,LIVE.src==="mand"&&LIVE.mcase?(LIVE.mcase.coreThemes[LIVE.ti]||{}).name:"");
-let lcSid="",LOADSYNC="";
-function askLiveChoice(){   // 강의마다 처음 한 번만(앱 주소를 새로 고친 뒤, 다른 PC에서 이어서 진행할 때)
-  if(!ADMIN||ROLE!=="host"||!liveActive()||lcSid===LIVE.sid)return;
-  lcSid=LIVE.sid;
-  if(LOADSYNC&&LOADSYNC===CODE){LOADSYNC="";if(!liveSame())syncHostToLive();return}if(liveMine()&&!liveSame())openLiveChoice();
+let lcKey="",LOADSYNC="";
+/* 교수 PC가 강의에 연결될 때(새로 고침, 강의 코드·PIN으로 이어서 진행, 강의 기록에서 불러오기) 처음 한 번:
+   묻지 않고 위쪽 사례·핵심원인·진행 방식을 그 강의에 맞춥니다.
+   ‘어느 사례로 진행할까요?’ 창은 강의 도중 위쪽 사례를 직접 바꿨을 때만 뜹니다(caseSel.onchange). */
+function askLiveChoice(){
+  if(!ADMIN||ROLE!=="host"||!LIVE||!LIVE.sid)return;
+  if(!liveActive()&&HOSTREV!==CODE)return;
+  const k=CODE+"/"+LIVE.sid;if(lcKey===k)return;lcKey=k;
+  const quiet=LOADSYNC===CODE;LOADSYNC="";
+  const diff=!liveSame();syncHostToLive();
+  if(diff&&!quiet)toast(`화면을 진행 중이던 강의 ‘${LIVE.title||"위험예지 빙고 훈련"}’(사례 ${LIVE.ci+1})에 맞췄습니다.`);
 }
 function openLiveChoice(){
   if(!liveActive())return;
