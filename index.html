@@ -4099,8 +4099,12 @@ async function liveChoice(act){
   if(act==="keep"){syncHostToLive();toast("열린 강의의 사례로 화면을 맞췄습니다. 이어서 진행하세요.");return}
   if(act==="fresh"){   // 앱을 새로 열었을 때의 확인 창에서 ‘마감하고 새로 시작’: 처음 단계(상황파악)부터
     await closeCurrentLecture();
+    // 새로 시작은 항상 처음 상태로: 사례 1, 처음 설정(조별전·만다라트 문항·5×5·4개 조·목표 3줄)
+    S.ci=0;S.ti=0;S.sub=0;caseSel.value=0;
+    Object.assign(S.cfg,{mode:"team",src:"mand",size:5,teams:4,target:3,weight:false,fill:"phone"});
+    renderAll();newGame();
     go("w5");window.scrollTo({top:0,behavior:"smooth"});
-    toast("강의를 마감했습니다. 상황파악부터 새로 시작하세요. 사례는 위쪽에서 바꿀 수 있습니다.");
+    toast("강의를 마감했습니다. 사례 1의 상황파악부터 새로 시작합니다. 다른 사례는 위쪽에서 고를 수 있습니다.");
     return}
   if(act==="resume"){syncHostToLive();go("bingo");toast(`‘${LIVE.title||"위험예지 빙고 훈련"}’ 강의를 이어서 진행합니다.`);
     setTimeout(()=>{const p=$("#livePanel");if(p)p.scrollIntoView({behavior:"smooth",block:"start"})},300);return}
