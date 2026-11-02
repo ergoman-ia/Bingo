@@ -2946,8 +2946,16 @@ function renderW5(){
   $("#w5Grid").innerHTML=W5K.map(([k,ko,en])=>`<div class="f"><div class="k"><b>${ko}</b><i>${en}</i></div><div class="v">${esc(w[k])}</div></div>`).join("");
 }
 
-/* 스마트폰이 강의에 들어가 있고 만다라트 방식이면, 강의에서 고른 핵심원인(LIVE.ti)만 보입니다. 아니면 -1(잠그지 않음). */
-const lockedTi=()=>ROLE==="team"&&LIVE&&LIVE.mcase&&LIVE.src==="mand"&&liveActive()?(LIVE.ti||0):-1;
+/* 강의 진행 중(만다라트 방식)에는 강의에서 고른 핵심원인(LIVE.ti)만 보입니다. 아니면 -1(잠그지 않음).
+   - 스마트폰: 강의에 들어가 있으면 항상 잠급니다.
+   - 교수 PC: 위쪽 사례가 진행 중인 강의의 사례와 같을 때 잠급니다(다른 사례로 바꾸면 기존 ‘어느 사례로 진행할까요?’ 창이 뜹니다). */
+const lockedTi=()=>{
+  if(!(LIVE&&LIVE.mcase&&LIVE.src==="mand"&&liveActive()))return -1;
+  if(ROLE==="team")return LIVE.ti||0;
+  return LIVE.ci===S.ci?(LIVE.ti||0):-1;
+};
+/* 스마트폰은 강의에 들어가 있는 동안 위쪽 ‘사례’ 선택을 잠급니다(판은 강의 사례로 만들어지므로 화면만 어긋나는 것을 막음). */
+function applyCaseLock(){caseSel.disabled=ROLE==="team"&&!!(CODE&&LIVE&&liveActive());caseSel.title=caseSel.disabled?"강의 진행 중에는 사례를 바꿀 수 없습니다":""}
 /* 2. 4라운드 */
 function renderKYT(){
   const r=DATA.R[S.ci], m=caseM(S.ci), lk=lockedTi();
@@ -2968,7 +2976,7 @@ function renderMand(){
   const lk=lockedTi();if(lk>=0)S.ti=lk;   // 스마트폰: 강의에서 고른 핵심원인으로 고정
   const m=caseM(S.ci), th=m.coreThemes[S.ti];
   $("#mTitle").textContent=DATA.M[S.ci].title;
-  $("#themePick").innerHTML=lk>=0?`<span class="btn" aria-pressed="true" style="cursor:default">핵심원인 ${lk+1} · ${esc(th.name)}</span><span class="hint">이번 빙고는 이 핵심원인으로 진행합니다.</span>`
+  $("#themePick").innerHTML=lk>=0?`<span class="btn" aria-pressed="true" style="cursor:default">핵심원인 ${lk+1} · ${esc(th.name)}</span><span class="hint">${ROLE==="team"?"이번 빙고는 이 핵심원인으로 진행합니다.":"강의 진행 중 · 이 핵심원인으로 빙고가 진행됩니다. 바꾸려면 강의를 끝내고 새로 개설하세요."}</span>`
     :m.coreThemes.map((t,i)=>`<button class="btn" aria-pressed="${i===S.ti}" data-ti="${i}">핵심원인 ${i+1} · ${esc(t.name)}</button>`).join("");
   const ed="";
   // 3x3
@@ -3874,6 +3882,7 @@ function tSave(now){if(!TB)return;tDirty=true;clearTimeout(tTimer);
 function tBoardObj(){if(TB&&!TB.w)TB.w={};return TB}
 function renderTeam(){
   if(ROLE!=="team")return;
+  applyCaseLock();
   const L=LIVE,show=id=>["tWait","tJoin","tPick","tPlay"].forEach(k=>$("#"+k).hidden=k!==id),badge=$("#teamBadge");
   if(!FB){show("tWait");$("#tWait").innerHTML="<b>실시간 서버에 연결되지 않은 화면입니다.</b>";badge.hidden=true;return}
   if(!L||!CODE)$("#tClosed").hidden=true;
@@ -4015,6 +4024,7 @@ function onLive(){
     if(!ADMIN)return;
     if(!liveInit&&liveActive())S.cfg.fill="phone";
     liveInit=true;
+    {const lk=lockedTi();if(onLive.lk!==lk){onLive.lk=lk;renderKYT();renderMand()}}   // 강의 시작·종료에 맞춰 핵심원인 잠금을 다시 그림
     if(S.cfg.fill==="phone"){if(LIVE&&(LIVE.phase==="play"||(LIVE.phase==="done"&&HOSTREV===CODE)))buildLiveG(BOARDS);else if(G&&G.live)G=null;renderBingo()}
   }else renderTeam();
 }
