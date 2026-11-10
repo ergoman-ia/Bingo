@@ -291,9 +291,7 @@ html.pm{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html.pm,html.pm body{overflow-x:clip;max-width:100%}
 .phone-mode section.panel>*,.phone-mode .head>*{min-width:0;max-width:100%}
 .phone-mode input,.phone-mode select,.phone-mode textarea{font-size:max(16px,1em)}   /* 아이폰은 16px보다 작은 입력 칸을 누르면 화면을 확대해 폭이 넘어 보임 */
-.phone-mode .btn,.phone-mode .chip,.phone-mode .lec{white-space:normal;max-width:100%;min-width:0;text-align:left}
-.phone-mode .lec{width:100%}
-.phone-mode .lec>*{display:block;min-width:0}
+.phone-mode .btn,.phone-mode .chip{white-space:normal;max-width:100%;min-width:0}
 .phone-mode .chips,.phone-mode .row,.phone-mode .tbar,.phone-mode .startbar{min-width:0;max-width:100%}
 .phone-mode .rv-card{padding:20px 14px;max-width:100%}
 .closedbar{background:var(--ink);color:var(--ground);border-radius:10px;padding:12px 16px;font-weight:700;line-height:1.5}
@@ -323,7 +321,6 @@ details.nodev>summary{cursor:pointer;font-weight:700;margin-bottom:8px}
 .rp-row{display:grid;grid-template-columns:minmax(84px,auto) minmax(0,1fr);gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--surface)}
 .rp-k{font-weight:900;color:var(--olive);white-space:nowrap}
 .rp-v{font-weight:700;color:var(--ink)}
-.rp-say{background:var(--signal-soft);border:1.5px solid var(--signal);border-radius:8px;padding:10px 12px;font-weight:900;color:var(--signal-ink);line-height:1.5}
 .rv-sub .rpath{justify-self:center;max-width:720px}
 .tcard{gap:10px;padding:18px 16px;max-height:calc(100dvh - 32px);overflow:auto}
 .tcard .rv-text{font-size:clamp(1.4rem,7vw,2.2rem)}
@@ -339,10 +336,6 @@ details.nodev>summary{cursor:pointer;font-weight:700;margin-bottom:8px}
 .bg-chant{display:grid;gap:4px;background:var(--olive-soft);border-radius:10px;padding:10px 14px}
 .bg-chant span{font-size:.85rem;color:var(--ink2)}
 /* 실시간 */
-.lecs{display:grid;gap:8px}
-.lec{display:grid;gap:2px;text-align:left;background:var(--surface);border:2px solid var(--olive);border-radius:10px;padding:12px 14px;cursor:pointer}
-.lec b{font-size:1.05rem}.lec span{font-size:.85rem;color:var(--ink2)}
-.lec:hover,.lec:focus-visible{border-color:var(--signal)}
 .phone-offline #p-bingo .setup,.phone-offline #livePanel{display:none!important}
 .topbtn{background:transparent;color:var(--olive-ink);border-color:currentColor;padding:5px 10px;font-size:.8rem}
 .qrrow{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;align-items:center;background:var(--ground);border-radius:10px;padding:12px}
@@ -3311,7 +3304,7 @@ const IS_PHONE=/Android|iPhone|iPod|Mobile|Windows Phone/i.test(navigator.userAg
 const HKEY=KEY+"-host";
 let HOSTINFO={};try{HOSTINFO=JSON.parse(localStorage.getItem(HKEY)||"{}")||{}}catch(e){HOSTINFO={}}
 const saveHost=()=>{try{localStorage.setItem(HKEY,JSON.stringify(HOSTINFO))}catch(e){}};
-let CODE="",LECTURES=[],unsubL=null;
+let CODE="";
 const joinUrl=()=>`${location.origin}${location.pathname}?c=${CODE}`;
 const newCode=()=>{const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let x="";for(let i=0;i<6;i++)x+=A[Math.floor(Math.random()*A.length)];return x};
 const newPin=()=>String(Math.floor(100000+Math.random()*900000));
@@ -3501,7 +3494,6 @@ function hostBeat(force){
   if(now-(LIVE.alive||0)>ALIVE_MS){LIVE.alive=now;sRef().update({alive:now}).catch(()=>{})}
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){hbSeen=Math.max(hbSeen,Date.now()-HB_DEAD/2);hostBeat(true)}});
-setInterval(()=>{if(ROLE==="team"&&!CODE&&unsubL){const n=LECTURES.length;LECTURES=LECTURES.filter(liveNow);if(n!==LECTURES.length)renderTeam()}},60000);
 setInterval(()=>{hostBeat(false);
   // 스마트폰: 교수 화면 신호가 끊겼는지 확인
   if(ROLE==="team"&&CODE&&LIVE&&liveActive()){const down=Date.now()-hbSeen>HB_DEAD;if(down!==hbDown){hbDown=down;renderTeam()}}
@@ -3538,10 +3530,6 @@ function syncList(){if(ROLE==="team"||!ADMIN){LIST=ROSTER&&LIVE&&ROSTER.sid===LI
 function setCode(c){CODE=c||"";LIVE_LOADED=false;ctxSid=null;tCaseSid="";subscribeBase()}
 // 지금 진행 중인 강의: 열려 있고, 마감되지 않았고, 교수 PC가 최근(12분 안)에 살아 있음을 남긴 강의
 const liveNow=x=>!!(x&&x.open&&x.phase!=="done"&&Date.now()-(x.alive||0)<ALIVE_DEAD);
-function watchLectures(on){
-  if(on&&!unsubL)unsubL=fdb.collection("lectures").where("open","==",true).onSnapshot(q=>{LECTURES=q.docs.map(d=>d.data()).filter(liveNow).sort((a,b)=>(b.opened||0)-(a.opened||0));if(ROLE==="team"&&!CODE)renderTeam()},()=>{});
-  if(!on&&unsubL){unsubL();unsubL=null}
-}
 
 function rpc(fn,...args){return API[fn](...args)}
 const liveActive=()=>!!(LIVE&&LIVE.sid&&(LIVE.phase==="pick"||LIVE.phase==="play"));
@@ -3929,16 +3917,10 @@ async function doJoin(q){
     myBid=r.bid;P.bid=r.bid;P.sid=LIVE.sid;if(q.name)P.name=q.name;saveP();MINE=null;TB=null;resubBoards();renderTeam();
   }catch(e){netErr()}
 }
-function chooseLecture(c){c=String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(!c){toast("강의 코드를 입력해 주세요.");return}
-  P.code=c;saveP();watchLectures(false);try{history.replaceState(null,"",`${location.pathname}?c=${c}`)}catch(e){}setCode(c);renderTeam()}
-function leaveLecture(){P.code="";saveP();try{history.replaceState(null,"",location.pathname)}catch(e){}setCode("");renderTeam()}
-$("#tWait").addEventListener("click",e=>{if(e.target.id==="tLecSwitch2")leaveLecture()});
-$("#tJoin").addEventListener("click",e=>{const lc=e.target.closest("[data-lec]");if(lc){chooseLecture(lc.dataset.lec);return}
-  if(e.target.id==="tCodeGo"){chooseLecture($("#tCodeIn").value);return}
-  if(e.target.id==="tLecSwitch"){leaveLecture();return}
+$("#tJoin").addEventListener("click",e=>{
   const b=e.target.closest("[data-join]");if(b){doJoin({no:+b.dataset.join});return}
   if(e.target.id==="tJoinGo"){const v=$("#tJoinName").value.trim();if(!v){toast("이름을 입력해 주세요.");return}doJoin({name:v})}});
-$("#tJoin").addEventListener("keydown",e=>{if(e.target.id==="tJoinName"&&e.key==="Enter"){e.preventDefault();$("#tJoinGo").click()}if(e.target.id==="tCodeIn"&&e.key==="Enter"){e.preventDefault();chooseLecture(e.target.value)}});
+$("#tJoin").addEventListener("keydown",e=>{if(e.target.id==="tJoinName"&&e.key==="Enter"){e.preventDefault();$("#tJoinGo").click()}});
 function renderTeamPick(){
   if(DRAG&&DRAG.on&&DRAG.grid.id==="tGrid"){DRAG.pending=true;return}
   const L=LIVE,n=L.size,N=n*n,b=tBoardObj(),done=!!TB.done;
