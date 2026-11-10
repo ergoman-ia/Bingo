@@ -388,6 +388,8 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 .rv-text{font-family:var(--display);font-size:clamp(2rem,6vw,4rem);line-height:1.2;color:var(--signal-ink);text-wrap:balance}
 .rv-sub{font-size:1.05rem;color:var(--ink2);display:grid;gap:4px}
 .rv-q{font-size:1.25rem;font-weight:900}
+.rv-parent{font-family:var(--display);font-size:clamp(1.4rem,4.2vw,2.8rem);line-height:1.2;color:var(--ink);text-wrap:balance;margin-bottom:-6px}   /* 선택한 원인 위의 (세부요인): 원인보다 조금 작게, 예전 ‘3. 세부요인’ 줄과 같은 어두운 색 */
+.tcard .rv-parent{font-size:clamp(1.05rem,5vw,1.6rem)}
 .w5wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px)}
 .w5img{width:100%;height:100%;object-fit:cover;display:block;border-left:1.5px solid var(--line);min-height:220px}
 
@@ -573,6 +575,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 <div class="reveal" id="reveal" hidden role="dialog" aria-modal="true" aria-labelledby="rvText">
   <div class="rv-card">
     <span class="eyebrow" id="rvBy"></span>
+    <div class="rv-parent" id="rvParent" hidden></div>
     <div class="rv-text" id="rvText"></div>
     <div class="rv-sub" id="rvSub"></div>
     <div class="rv-q">이 위험을 막을 대책을 말해 보세요.</div>
@@ -3830,17 +3833,14 @@ function riskPath(text){
     else{const pg=th.subGoals.find(x=>x.details.includes(text));if(pg){p.sub=pg.name;p.kind="detail"}else p.kind=text===th.name?"core":"case"}}
   return p;
 }
+/* 선택한 원인 위에 괄호로 표시할 세부요인(구체적 위험요인을 호출했을 때만) */
+const upSub=text=>{const p=riskPath(text);return p.kind==="detail"?p.sub:""};
 function pathHtml(text){
   const p=riskPath(text);
   const row=(n,k,v)=>`<div class="rp-row"><span class="rp-k">${n}. ${k}</span><span class="rp-v">${esc(v)}</span></div>`;
   let rows=row(1,"사례",p.cas);
   if(p.core)rows+=row(2,"핵심원인",p.core);
-  if(p.sub)rows+=row(3,"세부요인",p.sub);
-  const say=p.kind==="detail"?`현재 위험요인은 ‘${esc(p.sub)}’ 세부요인의 구체적 위험요인입니다.`
-    :p.kind==="sub"?`현재 위험요인은 ‘${esc(p.core)}’ 핵심원인의 세부요인입니다.`
-    :p.kind==="core"?`현재 위험요인은 이 사례의 핵심원인입니다.`
-    :`현재 위험요인은 ‘${esc(p.cas)}’ 사례의 빙고 문항입니다.`;
-  return `<div class="rpath">${rows}<div class="rp-say">${say}</div></div>`;
+  return `<div class="rpath">${rows}</div>`;
 }
 
 /* 빙고 모달: 같은 호출에서 목표 줄 수를 채운 조(사람)를 모두 함께 표시 */
@@ -3861,7 +3861,7 @@ $("#bingoModal").addEventListener("click",e=>{if(e.target.id==="bingoModal")$("#
 function showReveal(){
   if(!G||!G.last||ROLE!=="host")return;
   const L=G.last,names=[...new Set(L.hits.map(h=>G.boards[h[0]].name))];
-  $("#rvBy").textContent=`${L.by} 호출`;$("#rvText").textContent=L.text;
+  $("#rvBy").textContent=`${L.by} 호출`;$("#rvText").textContent=L.text;{const up=upSub(L.text),el=$("#rvParent");el.textContent=up?`(${up})`:"";el.hidden=!up}
   $("#rvSub").innerHTML=pathHtml(L.text)+`<span>이 요인을 고른 ${G.mode==="solo"||(G.live&&LIVE.mode==="solo")?"사람":"조"}: ${names.length?(names.length>8?`${names.slice(0,8).map(esc).join(", ")} 외 ${names.length-8}명`:names.map(esc).join(", ")):"없음"}</span>`+(turnBased()&&G.boards[G.turn]?`<span>다음 차례: <b>${esc(G.boards[G.turn].name)}</b></span>`:"");
   $("#reveal").hidden=false;$("#rvClose").focus();
 }
@@ -4003,7 +4003,7 @@ function renderTeamPlay(){
   const cf=$("#tConfirm");
   if(my&&tPending>=0&&tSentN<0&&b.cells[tPending]&&!b.cells[tPending].m){cf.hidden=false;
     const tx=b.cells[tPending].t;
-    cf.innerHTML=`<div class="rv-card tcard"><span class="eyebrow">이 칸을 호출할까요?</span><div class="rv-text">${esc(tx)}</div>${pathHtml(tx)}<div class="rv-q">호출한 뒤 이 위험을 막을 대책을 함께 말해 주세요.</div><div class="row" style="justify-content:center"><button class="btn primary" id="tGo">호출하기</button><button class="btn" id="tNo">취소</button></div></div>`}
+    cf.innerHTML=`<div class="rv-card tcard"><span class="eyebrow">이 칸을 호출할까요?</span>${upSub(tx)?`<div class="rv-parent">(${esc(upSub(tx))})</div>`:""}<div class="rv-text">${esc(tx)}</div><div class="row" style="justify-content:center"><button class="btn primary" id="tGo">호출하기</button><button class="btn" id="tNo">취소</button></div></div>`}
   else{cf.hidden=true;tPending=-1}
   {const last=L.calls[L.calls.length-1];if(last&&b.cells.some(x=>x.t===last.text)&&lastHitN!==L.calls.length){lastHitN=L.calls.length;try{navigator.vibrate&&navigator.vibrate(150)}catch(e){}}}
   $("#tWin").hidden=true;
