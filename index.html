@@ -213,6 +213,7 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .chip{border:1.5px solid var(--line);border-radius:99px;padding:4px 11px;background:var(--surface);font-size:.86rem;cursor:pointer;text-align:left;line-height:1.35}
 .chip:hover{border-color:var(--olive)}
 .chip.head{font-weight:700;color:var(--cell-ink);border-color:transparent}
+.grp-head{display:inline-block;border-radius:99px;padding:4px 11px;font-size:.86rem;line-height:1.35;font-weight:700;color:var(--cell-ink)}   /* 판 짜기 목록의 세부요인 이름(묶음 표시, 누를 수 없음) */
 .chip[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:var(--olive-ink)}
 .chip:disabled{opacity:.4;cursor:not-allowed}
 .chip:focus-visible,.slot:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
@@ -342,7 +343,6 @@ details.nodev>summary{cursor:pointer;font-weight:700;margin-bottom:8px}
 .qr{background:#fff;border:0;border-radius:8px;padding:6px;cursor:zoom-in;width:180px;height:180px}
 .qr svg,.qrbig svg{width:100%;height:100%;display:block}
 .qrbig{background:#fff;border-radius:12px;padding:10px;width:min(70vh,80vw,560px);aspect-ratio:1/1;justify-self:center}
-.url{font-family:var(--mono);font-size:.78rem;word-break:break-all;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:4px 6px}
 .qrmini summary{cursor:pointer;font-weight:700;margin-bottom:8px}
 dialog{border:0;border-radius:12px;padding:0;background:var(--surface);color:var(--ink);width:min(440px,calc(100vw - 32px))}
 dialog::backdrop{background:rgba(10,14,8,.55)}
@@ -459,7 +459,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <div class="head">
       <span class="eyebrow">Step 3 · 만다라트</span>
       <h1 id="mTitle"></h1>
-      <p class="lead">가운데 핵심원인 → 둘레 8칸 세부요인 → 각 세부요인의 구체적 위험요인 8개로 펼칩니다. 세부요인 8개와 구체적 위험요인 64개, 모두 72개가 빙고 판의 문항이 됩니다.</p>
+      <p class="lead">가운데 핵심원인 → 둘레 8칸 세부요인 → 각 세부요인의 구체적 위험요인 8개로 펼칩니다. 구체적 위험요인 64개가 빙고 판의 문항이 됩니다.</p>
     </div>
     <div class="mbar">
       <div class="theme-pick" id="themePick" role="group" aria-label="핵심원인 선택"></div>
@@ -595,7 +595,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
   <div class="row" style="justify-content:flex-end"><button class="btn" id="paCancel">취소</button><button class="btn primary" id="paOk">확인</button></div></div>
 </div>
 <div class="reveal" id="qrBig" hidden role="dialog" aria-modal="true" aria-label="참가 QR 코드">
-  <div class="rv-card"><span class="eyebrow">QR 코드를 찍어 참가하세요</span><div class="qrbig" id="qrBigImg"></div><code class="url" id="qrBigUrl"></code>
+  <div class="rv-card"><span class="eyebrow">QR 코드를 찍어 참가하세요</span><div class="qrbig" id="qrBigImg"></div>
   <div class="row" style="justify-content:center"><button class="btn primary" id="qrBigClose">닫기</button></div></div>
 </div>
 
@@ -3025,7 +3025,7 @@ function groups(){
   if(src==="mand"){const th=live?LIVE.mcase.coreThemes[LIVE.ti]:caseM(S.ci).coreThemes[S.ti];return th.subGoals.map((s,k)=>({name:s.name,k,items:uniq(s.details)}))}
   return [{name:"사례 빙고 문항",k:-1,items:uniq(DATA.B[ci].items)}];
 }
-function pool(){return uniq(groups().flatMap(g=>g.k>=0?[g.name,...g.items]:g.items))}
+function pool(){return uniq(groups().flatMap(g=>g.items))}   // 빙고 문항: 구체적 위험요인(64개)만, 세부요인 이름은 넣지 않음
 function parentOf(text){const src=G&&G.live&&LIVE?LIVE.src:S.cfg.src;if(src!=="mand")return null;for(const s of curTheme().subGoals){if(s.name===text)return null;if(s.details.includes(text))return s.name}return null}
 const useW=()=>false;   // 가중치 기능은 쓰지 않음
 const saveGame=()=>{if(!G||G.live||ROLE==="team")return;try{localStorage.setItem(GKEY,JSON.stringify({ci:S.ci,ti:S.ti,cfg:S.cfg,G}))}catch(e){}};
@@ -3172,7 +3172,7 @@ function renderPicker(){
   const picked=new Set(b.picks.filter(Boolean)),full=k===N;
   const chip=(t,cls,st)=>`<button class="chip${cls}" data-t="${esc(t)}" aria-pressed="${picked.has(t)}" ${!picked.has(t)&&full?"disabled":""} ${st||""}>${esc(t)}</button>`;
   $("#pSrc").innerHTML=
-    groups().map(g=>`<div class="grp">${g.k>=0?`<span class="eyebrow" style="color:var(--ink2)">세부요인 ${g.k+1}</span>`:`<span class="eyebrow" style="color:var(--ink2)">${esc(g.name)}</span>`}<div class="chips">${g.k>=0?chip(g.name," head",`style="background:${picked.has(g.name)?"":colorVar(g.k)}"`):""}${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");
+    groups().map(g=>`<div class="grp">${g.k>=0?`<span class="eyebrow" style="color:var(--ink2)">세부요인 ${g.k+1}</span>`:`<span class="eyebrow" style="color:var(--ink2)">${esc(g.name)}</span>`}<div class="chips">${g.k>=0?`<span class="grp-head" style="background:${colorVar(g.k)}">${esc(g.name)}</span>`:""}${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");
   const left=G.boards.map(x=>({x,r:N-x.picks.filter(Boolean).length})).filter(o=>o.r>0);
   $("#pState").innerHTML=stateMsg?`<b>${esc(stateMsg)}</b>`:left.length?`아직 채울 칸: ${left.map(o=>`<b>${esc(o.x.name)}</b> ${o.r}칸`).join(" · ")}`:`<b>모든 판이 준비되었습니다.</b> 빙고를 시작하세요.`;
   $("#pStart").disabled=left.length>0;
@@ -3210,7 +3210,7 @@ function renderPlay(){
 function renderBingo(){
   const c=S.cfg;
   $("#bTitle").textContent="빙고 훈련";$("#bCase").innerHTML=caseCard();
-  const srcName=c.src==="mand"?`만다라트 “${caseM(S.ci).coreThemes[S.ti].name}”의 세부요인·구체적 위험요인`:"사례 빙고 문항";
+  const srcName=c.src==="mand"?`만다라트 “${caseM(S.ci).coreThemes[S.ti].name}”의 구체적 위험요인`:"사례 빙고 문항";
   $("#bLead").textContent=c.mode==="team"
     ?`조별전: 각 조가 토론으로 위험요인을 골라 자기 빙고판을 짭니다. 차례가 된 조가 한 칸을 골라 그 위험요인과 대책을 말하면, 같은 요인을 고른 모든 조가 함께 표시합니다. 먼저 ${c.target}줄을 완성한 조가 이깁니다. 문항: ${srcName}.`
     :`개인전: 위험요인을 골라 판을 짠 뒤, 위험요인을 찾아 말하거나 진행자가 호출한 칸을 표시합니다. ${c.target}줄을 완성하면 행동 목표를 외칩니다. 문항: ${srcName}.`;
@@ -3329,14 +3329,6 @@ function writeS(S2){LIVE=S2;onLive();return sRef().set(S2).catch(fsErr)}
 
 /* 예전 서버 함수와 같은 모양의 함수들 */
 const API={
-  async apiClaim(code,pin){
-    code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");pin=String(pin||"").normalize("NFC").trim();
-    if(!code||!pin)return {err:"강의 코드와 PIN을 모두 입력해 주세요."};
-    try{const snap=await fdb.doc(`lectures/${code}`).get();if(!snap.exists)return {err:"그 코드의 강의가 없습니다."};
-      await putClaim(code,pin);
-      return {ok:true,code,lec:snap.data()}}
-    catch(e){return {err:e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"연결하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
-  },
   async apiJoin(q){
     const L=LIVE;if(!L||q.sid!==L.sid||!liveActive())return {err:"훈련이 새로 시작되었습니다. 화면을 새로 고침해 주세요."};
     const N=L.size*L.size;
@@ -3389,7 +3381,7 @@ const API={
         if(fresh){
           await closeCurrentLecture();   // 스마트폰에는 지금 진행하는 강의 하나만 보이도록 이전 강의는 마감
           let code="";for(let k=0;k<6&&!code;k++){const c=newCode();const ex=await fdb.doc(`lectures/${c}`).get();if(!ex.exists)code=c}
-          if(!code)return {err:"강의 코드를 만들지 못했습니다. 다시 눌러 주세요."};
+          if(!code)return {err:"강의를 만들지 못했습니다. 다시 눌러 주세요."};
           CODE=code;pin=newPin();HOSTINFO={code,pin,title:String(p.title||"").trim().slice(0,40)};saveHost();
           Object.assign(Sx,{code,title:HOSTINFO.title||"위험예지 빙고 훈련",hostUid:UID,open:true,opened:Date.now(),alive:Date.now()});
         }else Object.assign(Sx,{code:CODE,title:LIVE.title,hostUid:LIVE.hostUid,open:true,opened:LIVE.opened||Date.now(),alive:Date.now()});
@@ -3435,7 +3427,7 @@ const API={
       if(action==="release"){await bRef(Sx.sid,p.bid).update({owner:null});return {ok:true}}
       if(action==="end"){Sx.endedPhase=Sx.phase;Sx.phase="done";Sx.open=false;Sx.ended=Date.now();Sx.results=calcR(Sx,bs);await writeS(Sx);return {ok:true}}
       return {err:"알 수 없는 요청입니다."};
-    }catch(e){return {err:e&&e.code==="permission-denied"?"이 PC에는 이 강의의 진행 권한이 없습니다. ‘이어서 진행’에 강의 코드와 진행자 PIN을 넣어 주세요.":"저장하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
+    }catch(e){return {err:e&&e.code==="permission-denied"?"이 PC에는 이 강의의 진행 권한이 없습니다. 강의 기록에서 이 강의를 ‘이어서 진행’으로 불러와 주세요.":"저장하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
   }
 };
 
@@ -3520,7 +3512,7 @@ function subscribeBase(){
   unsubS=sRef().onSnapshot(s=>{LIVE=s.exists?s.data():null;LIVE_LOADED=true;if(ADMIN)hostBeat(true);
     if(ROLE==="team"&&LIVE&&liveActive()&&!liveNow(LIVE)&&!hbDown&&Date.now()-hbSeen<HB_MS){hbSeen=0;hbDown=true}
     // 교수 PC: 강의 기록이 (다른 PC에서) 삭제되면 강의 개설 화면으로 돌아감
-    if(!LIVE&&ADMIN&&ROLE==="host"&&CODE){const c=CODE;if(HOSTINFO.code===c){HOSTINFO={};saveHost()}G=null;toast(`강의 코드 ${c}의 기록이 삭제되었습니다.`);setCode("");return}syncList();resubBoards();onLive();hostTick();askLiveChoice()},fsErr);
+    if(!LIVE&&ADMIN&&ROLE==="host"&&CODE){const c=CODE;if(HOSTINFO.code===c){HOSTINFO={};saveHost()}G=null;toast("진행하던 강의의 기록이 삭제되었습니다.");setCode("");return}syncList();resubBoards();onLive();hostTick();askLiveChoice()},fsErr);
   unsubR=rRef().onSnapshot(s=>{ROSTER=s.exists?s.data():null;if(syncList())onLive()},()=>{});
   // 스마트폰은 교수 화면 신호를 지켜봄(처음 받은 값은 예전 신호일 수 있어, 바뀔 때만 ‘살아 있음’으로 봄)
   if(ROLE==="team"){let first=true;unsubHB=hbRef().onSnapshot(s=>{if(first){first=false;return}hbSeen=Date.now();if(hbDown){hbDown=false;toast("교수님 화면이 다시 연결되었습니다. 이어서 진행합니다.");renderTeam()}},()=>{})}
@@ -3585,7 +3577,7 @@ $("#livePanel").addEventListener("input",e=>{const D=lecDraft();
 $("#livePanel").addEventListener("change",e=>{if(e.target.id==="lvTeams"){const D=lecDraft();D.teams=+e.target.value;S.cfg.teams=D.teams;renderLiveHost()}});
 /* 테스트: 무작위 입력 */
 function livePool(){const L=LIVE;if(!L)return[];
-  if(L.src==="mand"&&L.mcase){const th=L.mcase.coreThemes[L.ti];return uniq(th.subGoals.flatMap(s=>[s.name,...s.details]))}
+  if(L.src==="mand"&&L.mcase){const th=L.mcase.coreThemes[L.ti];return uniq(th.subGoals.flatMap(s=>s.details))}   // 무작위 채우기도 구체적 위험요인(64개)에서만
   return uniq(DATA.B[L.ci].items)}
 async function fillNoDevice(){
   if(!LIVE||LIVE.phase!=="pick"||LIVE.mode!=="team")return;
@@ -3609,14 +3601,14 @@ function renderLiveHost(){
     const rv=!!(L&&L.phase==="done"&&HOSTREV===CODE),last=CODE&&LIVE&&!rv,D=lecDraft();
     const revHtml=rv?`<div class="revhead"><span class="eyebrow">지난 강의 결과 보기 · 이 교수 화면에서만 보입니다</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2>
       <div class="case-label">${caseLabel(L.ci,L.src==="mand"&&L.mcase?(L.mcase.coreThemes[L.ti]||{}).name:"")}</div>
-      <span class="hint">강의 코드 ${esc(CODE)} · 개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 호출 ${(L.calls||[]).length}번. 아래 빙고판과 호출 기록을 보며 설명할 수 있습니다.</span>
+      <span class="hint">개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 호출 ${(L.calls||[]).length}번. 아래 빙고판과 호출 기록을 보며 설명할 수 있습니다.</span>
       <div class="row"><button class="btn primary" id="lvRevClose">결과 보기 닫기</button><button class="btn" id="lvRestart" disabled title="빙고를 마친 강의는 결과만 볼 수 있습니다">이 강의에서 다시 시작</button></div>
       <p class="hint" style="margin:0">빙고를 마친 강의는 결과만 볼 수 있습니다. 새 강의를 열려면 ‘결과 보기 닫기’를 누른 뒤 강의 개설 칸을 쓰세요.</p></div>`:"";
     /* 결과 보기 중에는 강의 개설 칸을 숨깁니다(‘결과 보기 닫기’를 누르면 다시 나타납니다). */
     if(rv){P_.innerHTML=revHtml;return}
     P_.innerHTML=`<div><span class="eyebrow">강의 개설</span><h2>강의를 개설하면 참가용 QR 코드가 만들어집니다</h2></div>
       <ol class="steps"><li>위에서 사례·핵심원인(만다라트 탭)과 진행 방식(조별전: 조마다 1대 / 개인전: 1인 1대), 판 크기, 목표 줄 수를 정합니다.</li>
-      <li>아래에 강의 이름과 조(조별전일 때)를 넣고 ‘강의 개설’을 누르면 강의 코드와 QR 코드가 나타납니다. 로그인은 필요 없습니다.</li>
+      <li>아래에 강의 이름과 조(조별전일 때)를 넣고 ‘강의 개설’을 누르면 QR 코드가 나타납니다. 로그인은 필요 없습니다.</li>
       <li>교육생은 QR 코드를 찍으면 이 강의로 바로 들어와 우리 조(또는 이름)를 고르고, 상황·위험예지·만다라트를 보며 판을 채웁니다.</li>
       <li>조별전은 모든 조가 입력을 마치면 자동으로, 개인전은 ‘빙고 시작’을 누르면 시작합니다. 호출한 위험요인은 이 화면에 크게 나타납니다.</li></ol>
       <div class="lecform">
@@ -3625,19 +3617,18 @@ function renderLiveHost(){
         <div class="lf" style="grid-column:1/-1"><span>조 이름(비워 두면 ‘1조, 2조…’)</span><div class="tnames" id="lvNames">${Array.from({length:D.teams},(_,i)=>`<input data-tn="${i}" type="text" maxlength="12" placeholder="${i+1}조" value="${esc(D.names[i]||"")}" aria-label="${i+1}번째 조 이름">`).join("")}</div></div>`:`<p class="hint" style="grid-column:1/-1;margin:0">개인전은 교육생이 참가할 때 자기 이름을 입력합니다.</p>`}
         <div style="grid-column:1/-1" class="row"><button class="btn primary" id="lvNew">강의 개설</button><span class="hint">사례 ${S.ci+1}: ${esc(caseShort(S.ci))} · ${c.src==="mand"?`핵심원인: ${esc(caseM(S.ci).coreThemes[S.ti].name)}`:"사례 빙고 문항"} · ${c.mode==="team"?`조별전 ${D.teams}개 조`:"개인전"} · ${c.size}×${c.size} · 목표 ${c.target}줄</span></div>
       </div>
-      ${last?(lecDone(L)?`<p class="hint" style="margin:0">지난 강의(코드 ${esc(CODE)})는 빙고를 마쳤습니다. 결과만 볼 수 있으며 같은 코드로 다시 시작할 수 없습니다. <button class="btn" id="lvRestart" disabled title="빙고를 마친 강의는 결과만 볼 수 있습니다">이 강의에서 다시 시작</button></p>`
-        :`<p class="hint" style="margin:0">지난 강의(코드 ${esc(CODE)})는 빙고를 마치지 못하고 끝났습니다. 하던 판 그대로 이어가려면 <button class="btn" id="lvResume">이어서 진행</button> <span class="hint">(판과 호출 기록이 지워지지 않습니다)</span></p>`):""}
-      <details><summary style="cursor:pointer;font-weight:700">다른 PC에서 연 강의를 이어서 진행하기</summary>
-        <div class="addrow" style="max-width:640px;margin-top:8px"><input id="lvCode" type="text" maxlength="8" placeholder="강의 코드" aria-label="강의 코드" style="text-transform:uppercase"><input id="lvPin" type="password" maxlength="100" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="진행자 PIN 또는 마스터 PIN" aria-label="진행자 PIN 또는 마스터 PIN"><button class="btn" id="lvClaim">이어서 진행</button></div></details>`;
+      ${last?(lecDone(L)?`<p class="hint" style="margin:0">지난 강의는 빙고를 마쳤습니다. 결과만 볼 수 있으며 같은 QR 코드로 다시 시작할 수 없습니다. <button class="btn" id="lvRestart" disabled title="빙고를 마친 강의는 결과만 볼 수 있습니다">이 강의에서 다시 시작</button></p>`
+        :`<p class="hint" style="margin:0">지난 강의는 빙고를 마치지 못하고 끝났습니다. 하던 판 그대로 이어가려면 <button class="btn" id="lvResume">이어서 진행</button> <span class="hint">(판과 호출 기록이 지워지지 않습니다)</span></p>`):""}
+      `;
     return;
   }
   const N=L.size*L.size,n=L.size,th=L.mcase?L.mcase.coreThemes[L.ti]:null;
   const done=LIST.filter(b=>b.done).length;
   const qr=qrSvg(joinUrl());
   const mine=L.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE;
-  const head=`<div class="tbar"><div><span class="eyebrow">${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · ${L.mode==="team"?"조별전":"개인전"} · 강의 코드 ${esc(CODE)}${HOSTINFO.code===CODE&&HOSTINFO.pin?` · 진행자 PIN ${esc(HOSTINFO.pin)}`:""}</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2><div class="case-label">${caseLabel(L.ci,L.src==="mand"&&th?th.name:"")}</div>${mine?"":`<span class="hint">⚠ 이 PC에는 진행 권한이 없습니다. 아래 ‘이어서 진행’이 필요합니다.</span>`}</div>
+  const head=`<div class="tbar"><div><span class="eyebrow">${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · ${L.mode==="team"?"조별전":"개인전"}${HOSTINFO.code===CODE&&HOSTINFO.pin?` · 진행자 PIN ${esc(HOSTINFO.pin)}`:""}</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2><div class="case-label">${caseLabel(L.ci,L.src==="mand"&&th?th.name:"")}</div>${mine?"":`<span class="hint">⚠ 이 PC에는 진행 권한이 없습니다. 강의 기록에서 이 강의를 ‘이어서 진행’으로 불러와 주세요.</span>`}</div>
     <div class="row"><span class="hint">설정을 바꾸려면 ‘강의 끝내기’ 뒤 새로 여세요.</span><button class="btn" id="lvRestart" ${lecDone(L)?'disabled title="빙고가 난 강의는 다시 시작할 수 없습니다. 강의를 끝내고 새 강의를 개설하세요."':""}>이 강의에서 다시 시작</button><button class="btn" id="lvNew">새 강의 개설</button><button class="btn ghost" id="lvEnd">강의 끝내기</button></div></div>`;
-  const qrBox=`<div class="qrrow"><button class="qr" id="lvQr" aria-label="QR 코드 크게 보기">${qr}</button><div style="display:grid;gap:6px;min-width:0"><b>QR 코드를 찍어 참가하세요 · 강의 코드 <span style="font-family:var(--mono);font-size:1.2em;color:var(--signal-ink)">${esc(CODE)}</span></b><span class="hint">${L.mode==="team"?"조마다 스마트폰 1대로 참가해 조 번호를 고릅니다.":"각자 스마트폰으로 참가해 이름을 입력합니다."}</span><code class="url">${esc(joinUrl())}</code><div class="row"><button class="btn" id="lvQrBig">QR 크게 보기</button></div></div></div>`;
+  const qrBox=`<div class="qrrow"><button class="qr" id="lvQr" aria-label="QR 코드 크게 보기">${qr}</button><div style="display:grid;gap:6px;min-width:0"><b>QR 코드를 찍어 참가하세요</b><span class="hint">${L.mode==="team"?"조마다 스마트폰 1대로 참가해 조 번호를 고릅니다.":"각자 스마트폰으로 참가해 이름을 입력합니다."}</span><div class="row"><button class="btn" id="lvQrBig">QR 크게 보기</button></div></div></div>`;
   if(L.phase==="pick"){
     const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?"입력 완료":b.kind==="team"&&!b.owned?"기기 연결 전":`${b.count}/${N}칸 입력 중`}</span>${b.kind==="team"&&b.owned?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-release="${b.bid}">기기 해제</button>`:""}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
     P_.innerHTML=head+qrBox+`<div class="tbar"><b>참가 현황 · 입력 완료 ${done}/${LIST.length}${L.mode==="team"?`(전체 ${L.teams}개 조)`:"명"}</b>${L.mode==="solo"?`<button class="btn primary" id="lvPlay" ${done?"":"disabled"}>입력 완료한 ${done}명으로 빙고 시작</button>`:`<span class="hint">모든 조가 입력을 마치면 자동으로 시작합니다.</span>`}</div>
@@ -3664,13 +3655,12 @@ $("#livePanel").addEventListener("click",e=>{
   if(b.id==="lvNoDevFill")fillNoDevice();
   if(b.id==="lvRestart")hostStartLive(false);
   if(b.id==="lvResume"&&LIVE)openLecture({...LIVE,code:CODE},true);   // 빙고를 못 마치고 끝낸 강의를 하던 단계부터 다시 엶(판 유지)
-  if(b.id==="lvClaim"){(async()=>{const r=await API.apiClaim($("#lvCode").value,$("#lvPin").value);if(r.err){toast(r.err);return}$("#lvPin").value="";await openLecture({...r.lec,code:r.code},true)})()}
   if(b.id==="lvPlay")adm("play");
   if(b.id==="lvRevClose")reviewClose();
   if(b.id==="lvEnd"&&confirm("강의를 끝낼까요? 참가자 화면도 종료되고, 강의 목록에서 사라집니다.")){adm("end");G=null}
   if(b.id==="lvQr"||b.id==="lvQrBig")showQrBig();
 });
-function showQrBig(){$("#qrBigImg").innerHTML=qrSvg(joinUrl());$("#qrBigUrl").textContent=`강의 코드 ${CODE} · ${joinUrl()}`;$("#qrBig").hidden=false;$("#qrBigClose").focus()}
+function showQrBig(){$("#qrBigImg").innerHTML=qrSvg(joinUrl());$("#qrBig").hidden=false;$("#qrBigClose").focus()}
 $("#qrBigClose").onclick=()=>$("#qrBig").hidden=true;
 $("#qrBig").addEventListener("click",e=>{if(e.target.id==="qrBig")$("#qrBig").hidden=true});
 
@@ -3692,7 +3682,7 @@ function renderHist(){
     <div class="lh-list">${rows.map(L=>{const res=L.results||{},wins=Object.keys(res).filter(k=>res[k]&&res[k].rank).length;
       return `<div class="lh-row${L.open?" open":""}" data-code="${esc(L.code)}"><div class="lh-top"><b>${esc(L.title||"위험예지 빙고 훈련")} <span class="lh-badge">${L.open?"진행 중":lecDone(L)?"끝남 · 빙고 완료":"끝남 · 빙고 미완료"}</span></b>
         <span class="row"><button class="btn" data-lhview="${esc(L.code)}">자세히</button><button class="btn" data-lhload="${esc(L.code)}">${L.phase==="done"?(lecDone(L)?"결과 보기":"이어서 진행"):"이 PC에서 진행"}</button><button class="btn ghost" data-lhdel="${esc(L.code)}">삭제</button></span></div>
-        <div class="lh-meta">강의 코드 ${esc(L.code)} · 개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 사례 ${(L.ci||0)+1}: ${esc(caseShort(L.ci||0))} · ${L.src==="mand"&&L.mcase?`핵심원인: ${esc((L.mcase.coreThemes[L.ti]||{}).name||"")}`:"사례 빙고 문항"} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 호출 ${(L.calls||[]).length}번 · 빙고 ${wins?`${wins}${L.mode==="team"?"개 조":"명"}`:"없음"}${lecMine(L)?"":" · 다른 PC에서 연 강의"}</div>
+        <div class="lh-meta">개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 사례 ${(L.ci||0)+1}: ${esc(caseShort(L.ci||0))} · ${L.src==="mand"&&L.mcase?`핵심원인: ${esc((L.mcase.coreThemes[L.ti]||{}).name||"")}`:"사례 빙고 문항"} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 호출 ${(L.calls||[]).length}번 · 빙고 ${wins?`${wins}${L.mode==="team"?"개 조":"명"}`:"없음"}${lecMine(L)?"":" · 다른 PC에서 연 강의"}</div>
         <div class="lh-detail" hidden></div></div>`}).join("")||`<span class="hint">저장된 강의가 없습니다.</span>`}</div>`;
 }
 async function showHistDetail(code,box){
@@ -3706,11 +3696,11 @@ async function showHistDetail(code,box){
 }
 /* PIN 입력 대화창: 입력한 글자는 ●로 가려서 보입니다. 취소하면 빈 문자열을 돌려줍니다.
    kind가 "master"이면 마스터 PIN만 묻습니다(강의 기록 삭제). */
-function askPin(code,kind){
+function askPin(code,kind,title){
   return new Promise(res=>{
     const box=$("#pinAsk"),inp=$("#paIn"),prev=document.activeElement,m=kind==="master";
     $("#paTitle").textContent=m?"마스터 PIN 확인":"PIN 입력";
-    $("#paMsg").textContent=m?`강의 코드 ${code}의 기록을 삭제하려면 마스터 PIN을 입력하세요.`:`강의 코드 ${code}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`;
+    {const nm=`‘${title||"위험예지 빙고 훈련"}’ 강의`;$("#paMsg").textContent=m?`${nm}의 기록을 삭제하려면 마스터 PIN을 입력하세요.`:`${nm}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`}
     inp.placeholder=m?"마스터 PIN":"진행자 PIN 또는 마스터 PIN";inp.setAttribute("aria-label",inp.placeholder);
     inp.value="";box.hidden=false;inp.focus();
     const done=v=>{box.hidden=true;inp.value="";box.onclick=null;inp.onkeydown=null;$("#paOk").onclick=null;$("#paCancel").onclick=null;if(prev&&prev.focus)prev.focus();res(v)};
@@ -3734,8 +3724,8 @@ async function putMaster(code,pin){
   try{await ref.delete()}catch(e){}
   await ref.set({pin,at:Date.now()});
 }
-async function claimFor(code){
-  const pin=(await askPin(code)).normalize("NFC").trim();if(!pin)return false;
+async function claimFor(code,title){
+  const pin=(await askPin(code,"",title)).normalize("NFC").trim();if(!pin)return false;
   try{await putClaim(code,pin);return true}
   catch(e){toast(e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return false}
 }
@@ -3751,9 +3741,9 @@ async function deleteLecture(L){
 }
 async function histDelete(code){
   const L=HIST.find(x=>x.code===code);if(!L)return;
-  if(!confirm(`‘${L.title||code}’(강의 코드 ${code}) 기록을 삭제할까요?${L.open?"\n진행 중인 강의입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
+  if(!confirm(`‘${L.title||"위험예지 빙고 훈련"}’ 기록을 삭제할까요?${L.open?"\n진행 중인 강의입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
   // 삭제는 강의를 연 PC여도 항상 마스터 PIN을 확인합니다.
-  const pin=(await askPin(code,"master")).normalize("NFC").trim();if(!pin)return;
+  const pin=(await askPin(code,"master",L.title)).normalize("NFC").trim();if(!pin)return;
   try{await putMaster(code,pin)}
   catch(e){toast(e&&e.code==="permission-denied"?"마스터 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return}
   try{await deleteLecture(L);toast("강의 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 보안 규칙(firestore.rules)을 새로 게시했는지 확인해 주세요.":"삭제하지 못했습니다. 인터넷 연결을 확인해 주세요.")}
@@ -3768,12 +3758,12 @@ $("#lecHistBody").addEventListener("click",e=>{const b=e.target.closest("button"
 /* 강의 기록에서 불러오기
    - 빙고를 완료한 강의: 교수 화면에서만 결과를 봄(스마트폰에는 보이지 않음)
    - 빙고를 완료하지 못하고 마감한 강의: 다시 열어 이어서 진행(스마트폰도 그 강의를 다시 불러와 입력·호출) */
-/* 강의 불러오기(강의 기록에서 고르거나, 강의 코드·PIN으로 이어서 진행할 때 모두 이 함수를 씁니다)
+/* 강의 불러오기(강의 기록에서 고르거나 ‘이어서 진행’을 누를 때 이 함수를 씁니다)
    - 불러온 강의가 기준입니다. 위쪽 사례·핵심원인·진행 방식은 불러온 강의에 자동으로 맞춥니다.
    - 확인 창 하나에 ‘지금 하던 것’(진행 중인 강의 또는 이 PC에서 짜던 판)과 ‘불러올 강의’를 나란히 보여 줍니다.
    - 빙고를 마친 강의는 결과만 이 화면에서 보고, 빙고를 마치지 못하고 마감한 강의는 다시 열어 이어서 진행합니다. */
 const lecCase=x=>plainCase(x.ci||0,x.src==="mand"&&x.mcase?(x.mcase.coreThemes[x.ti]||{}).name:"");
-const lecName=(x,code)=>`‘${x.title||"위험예지 빙고 훈련"}’(강의 코드 ${code})`;
+const lecName=(x,code)=>`‘${x.title||"위험예지 빙고 훈련"}’`;
 async function openLecture(L,claimed){
   const code=L.code,done=L.phase==="done",complete=lecDone(L);
   const lines=[];let warn="";
@@ -3783,7 +3773,7 @@ async function openLecture(L,claimed){
   const what=done?(complete?"빙고를 마친 강의라 결과만 이 화면에서 봅니다(스마트폰에는 보이지 않습니다).":"마감된 강의라 다시 열어 하던 판에서 이어서 진행합니다(스마트폰에서도 다시 열립니다).")
     :"이 PC에서 이 강의를 이어서 진행합니다.";
   if(!confirm(`${lines.join("\n")}\n\n${what}\n${warn}불러올까요?`))return;
-  if(!claimed&&!lecMine(L)&&!await claimFor(code))return;
+  if(!claimed&&!lecMine(L)&&!await claimFor(code,L.title))return;
   if(CODE!==code)await closeCurrentLecture();
   if(done&&!complete){
     const ph=L.endedPhase||((L.calls||[]).length?"play":"pick");
@@ -3880,7 +3870,7 @@ function renderTeam(){
   if(!CODE){reset();show("tWait");   // 빙고는 QR 코드로만 참가(스마트폰에서 강의 목록을 고르지 않음)
     $("#tWait").innerHTML=`<b>교수님 화면의 QR 코드를 찍어 참가하세요.</b><span class="hint">빙고 훈련은 QR 코드로만 참가할 수 있습니다.</span>`;return}
   if(!LIVE_LOADED){reset();show("tWait");$("#tWait").innerHTML="<b>강의 정보를 불러오는 중입니다…</b>";return}
-  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의 코드(${esc(CODE)})를 찾을 수 없습니다.</b><span class="hint">교수님 화면의 QR 코드를 다시 찍어 주세요.</span>`;return}
+  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의를 찾을 수 없습니다.</b><span class="hint">교수님 화면의 QR 코드를 다시 찍어 주세요.</span>`;return}
   // 강의가 마감되면 모든 탭 위에 안내하고 입력을 막음
   if(liveActive()&&hbDown){reset();show("tWait");clearTimeout(tTimer);tDirty=false;tPending=-1;
     const cl=$("#tClosed");cl.hidden=false;cl.innerHTML=`<b>강의가 중단되었습니다.</b> 교수님 화면과 연결이 끊겨 지금은 입력할 수 없습니다.`;
@@ -3935,7 +3925,7 @@ function renderTeamPick(){
   const picked=new Set(b.picks.filter(Boolean)),full=k===N;
   const chip=(t,cls,st)=>`<button class="chip${cls}" data-t="${esc(t)}" aria-pressed="${picked.has(t)}" ${done||(!picked.has(t)&&full)?"disabled":""} ${st||""}>${esc(t)}</button>`;
   $("#tSrc").innerHTML=
-    groups().map(g=>`<div class="grp"><span class="eyebrow" style="color:var(--ink2)">${g.k>=0?`세부요인 ${g.k+1}`:esc(g.name)}</span><div class="chips">${g.k>=0?chip(g.name," head",`style="background:${picked.has(g.name)?"":colorVar(g.k)}"`):""}${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");
+    groups().map(g=>`<div class="grp"><span class="eyebrow" style="color:var(--ink2)">${g.k>=0?`세부요인 ${g.k+1}`:esc(g.name)}</span><div class="chips">${g.k>=0?`<span class="grp-head" style="background:${colorVar(g.k)}">${esc(g.name)}</span>`:""}${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");
   const dn=LIST.filter(x=>x.done).length;
   $("#tState").innerHTML=done?`<b>입력 완료!</b> 다른 ${L.mode==="team"?"조":"참가자"}를 기다리는 중입니다(완료 ${dn}/${LIST.length}).`:full?`<b>판이 다 찼습니다.</b> 토론 결과가 맞으면 ‘입력 완료’를 누르세요.`:`${N-k}칸 남았습니다.${N-k>FILL_MAX?` 토론으로 채우다가 ${FILL_MAX}칸 이하가 남으면 ‘남은 칸 무작위로 채우기’를 쓸 수 있습니다.`:""}`;
   const dbtn=$("#tDone");dbtn.textContent=done?"다시 고치기":"입력 완료";dbtn.disabled=!done&&!full;
@@ -4068,7 +4058,7 @@ let lcKey="",LOADSYNC="",BOOTCODE="",LCMODE="";
 /* 교수 PC가 강의에 연결될 때 처음 한 번, 위쪽 사례·핵심원인·진행 방식을 그 강의에 맞춥니다.
    - 앱을 새로 열었을 때(새로 고침, 오랜만에 실행): 끝내지 않은 강의가 있으면 창을 띄워
      ‘이어서 진행’과 ‘마감하고 새 강의 개설’ 중에서 고르게 합니다.
-   - 강의 기록에서 불러오거나 강의 코드·PIN으로 이어서 진행할 때: 이미 고른 것이므로 묻지 않습니다.
+   - 강의 기록에서 불러올 때: 이미 고른 것이므로 묻지 않습니다.
    - ‘어느 사례로 진행할까요?’ 창은 강의 도중 위쪽 사례를 직접 바꿨을 때만 뜹니다(caseSel.onchange). */
 function askLiveChoice(){
   if(!ADMIN||ROLE!=="host"||!LIVE||!LIVE.sid)return;
@@ -4085,7 +4075,7 @@ function openResumeChoice(){
   const L=LIVE,calls=(L.calls||[]).length;LCMODE="resume";
   $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">진행 중이던 강의가 있습니다</span><h2 id="lcTitle">기존에 개설되어 진행되고 있던 강의가 다음과 같이 있습니다</h2></div></div>
     <div class="lc-info"><span>강의 이름</span><b>${esc(L.title||"위험예지 빙고 훈련")}</b><div class="case-label">${liveCaseLabel()}</div>
-      <span>강의 코드 ${esc(CODE)} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 목표 ${L.target}줄 · ${L.phase==="pick"?"판 짜는 중":`빙고 진행 중(호출 ${calls}번)`}</span>
+      <span>${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 목표 ${L.target}줄 · ${L.phase==="pick"?"판 짜는 중":`빙고 진행 중(호출 ${calls}번)`}</span>
       <span>개설 ${fmtDT(L.opened)} · 마지막 활동 ${fmtDT(L.alive)}</span></div>
     <p style="margin:0">이 강의를 이어서 진행할까요, 아니면 이 강의를 마감하고 상황파악부터 새로 시작할까요? 마감한 강의는 나중에 강의 기록에서 이어서 진행할 수 있습니다.</p>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-lc="fresh">마감하고 새로 시작</button><button class="btn primary" data-lc="resume">이어서 진행</button></div>`;
