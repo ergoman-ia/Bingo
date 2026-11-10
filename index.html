@@ -3912,9 +3912,9 @@ function renderTeam(){
   if(P.sid===L.sid&&P.bid)myBid=P.bid;else myBid="";
   $("#tTitle").textContent="빙고 훈련";
   $("#tCaseWrap").hidden=true;   // 스마트폰: 훈련 사례는 ‘상황·위험예지·만다라트’ 탭에서 봅니다.
-  $("#tLead").innerHTML=`${L.title?esc(L.title)+" · ":""}${L.mode==="team"?"조별전":"개인전"}<br>${L.src==="mand"&&L.mcase?`핵심원인: ${esc(L.mcase.coreThemes[L.ti].name)}`:"사례 빙고 문항"}<br>판 ${L.size}×${L.size} · 목표 ${L.target}줄`;   // 스마트폰에서 읽기 쉽게 세 줄로 나눔
+  $("#tLead").innerHTML=`- ${L.title?esc(L.title)+" · ":""}${L.mode==="team"?"조별전":"개인전"}<br>- ${L.src==="mand"&&L.mcase?`<b>핵심원인:</b> ${esc(L.mcase.coreThemes[L.ti].name)}`:"사례 빙고 문항"}<br>- 판 ${L.size}×${L.size} · 목표 ${L.target}줄`;   // 스마트폰에서 읽기 쉽게 세 줄로 나눔
   if(!myBid){show("tJoin");badge.hidden=true;
-    if(L.mode==="team"){$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">우리 조를 고르세요</h2><div class="chips">${LIST.map(b=>{const taken=b.owned&&b.own!==UID&&!(P.sid===L.sid&&P.bid===b.bid);return `<button class="btn" data-join="${b.no}" ${taken?"disabled":""}>${esc(b.name)}${taken?" · 다른 기기 참가 중":b.done?" · 입력 완료":""}</button>`}).join("")}</div><p class="hint" style="margin:0">한 조는 스마트폰 1대만 참가할 수 있습니다. 이미 참가 중인 조는 고를 수 없습니다.</p><div></div><div><button class="btn ghost" id="tLecSwitch">다른 강의 고르기</button></div>`}
+    if(L.mode==="team"){$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">우리 조를 눌러 참가하세요</h2><div class="chips">${LIST.map(b=>{const taken=b.owned&&b.own!==UID&&!(P.sid===L.sid&&P.bid===b.bid);return `<button class="btn" data-join="${b.no}" ${taken?"disabled":""}>${esc(b.name)}${taken?" · 다른 기기 참가 중":b.done?" · 입력 완료":""}</button>`}).join("")}</div><p class="hint" style="margin:0">한 조는 스마트폰 1대만 참가할 수 있습니다. 이미 참가 중인 조는 고를 수 없습니다.</p><div></div><div><button class="btn ghost" id="tLecSwitch">다른 강의 고르기</button></div>`}
     else if(L.phase!=="pick"){$("#tJoinBody").innerHTML=`<b>이미 빙고가 시작되었습니다.</b><span class="hint">다음 훈련에 참가해 주세요.</span>`}
     else{$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">이름을 입력하고 참가하세요</h2><div class="addrow"><input id="tJoinName" type="text" maxlength="20" placeholder="이름(예: 상병 김안전)" aria-label="이름" value="${esc(P.name||"")}"><button class="btn primary" id="tJoinGo">참가</button></div>`}
     return}
