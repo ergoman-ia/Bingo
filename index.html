@@ -286,6 +286,16 @@ html.pm{font-size:clamp(14px,4.1vw,18px)}
 .phone-mode .mwrap{grid-template-columns:minmax(0,1fr)}
 .phone-mode .mgrid .cell{font-size:clamp(10px,3.1vw,14px);padding:3px}
 .phone-mode .mgrid .cell.core{font-size:clamp(12px,3.8vw,17px)}
+/* 스마트폰 폭 맞춤(아이폰 13 mini 375px 등): 화면 밖으로 밀려나는 요소를 막음 */
+html.pm{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html.pm,html.pm body{overflow-x:clip;max-width:100%}
+.phone-mode section.panel>*,.phone-mode .head>*{min-width:0;max-width:100%}
+.phone-mode input,.phone-mode select,.phone-mode textarea{font-size:max(16px,1em)}   /* 아이폰은 16px보다 작은 입력 칸을 누르면 화면을 확대해 폭이 넘어 보임 */
+.phone-mode .btn,.phone-mode .chip,.phone-mode .lec{white-space:normal;max-width:100%;min-width:0;text-align:left}
+.phone-mode .lec{width:100%}
+.phone-mode .lec>*{display:block;min-width:0}
+.phone-mode .chips,.phone-mode .row,.phone-mode .tbar,.phone-mode .startbar{min-width:0;max-width:100%}
+.phone-mode .rv-card{padding:20px 14px;max-width:100%}
 .closedbar{background:var(--ink);color:var(--ground);border-radius:10px;padding:12px 16px;font-weight:700;line-height:1.5}
 .closedbar b{color:var(--hot)}
 .revwrap{display:grid;gap:12px;text-align:left;width:100%}
@@ -3887,12 +3897,10 @@ function renderTeam(){
   if(!FB){show("tWait");$("#tWait").innerHTML="<b>실시간 서버에 연결되지 않은 화면입니다.</b>";badge.hidden=true;return}
   if(!L||!CODE)$("#tClosed").hidden=true;
   const reset=()=>{badge.hidden=true;$("#tTitle").textContent="빙고 훈련";$("#tLead").textContent="";$("#tCaseWrap").hidden=true};
-  if(!CODE){reset();show("tJoin");watchLectures(true);
-    $("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">참가할 강의를 고르세요</h2>
-      <div class="lecs">${LECTURES.map(x=>`<button class="lec" data-lec="${esc(x.code)}"><b>${esc(x.title||"위험예지 빙고 훈련")}</b><span>${esc(caseShort(x.ci||0))} · ${x.mode==="team"?`조별전 ${x.teams}개 조`:"개인전"} · 코드 ${esc(x.code)}</span></button>`).join("")||`<span class="hint">지금 열린 강의가 없습니다. 교수님이 강의를 열면 여기에 나타납니다.</span>`}</div>
-      <div class="addrow"><input id="tCodeIn" type="text" maxlength="8" placeholder="강의 코드 6자리" aria-label="강의 코드" style="text-transform:uppercase"><button class="btn primary" id="tCodeGo">들어가기</button></div>`;return}
+  if(!CODE){reset();show("tWait");   // 빙고는 QR 코드로만 참가(스마트폰에서 강의 목록을 고르지 않음)
+    $("#tWait").innerHTML=`<b>교수님 화면의 QR 코드를 찍어 참가하세요.</b><span class="hint">빙고 훈련은 QR 코드로만 참가할 수 있습니다.</span>`;return}
   if(!LIVE_LOADED){reset();show("tWait");$("#tWait").innerHTML="<b>강의 정보를 불러오는 중입니다…</b>";return}
-  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의 코드(${esc(CODE)})를 찾을 수 없습니다.</b><span class="hint">QR 코드를 다시 찍거나 강의를 다시 골라 주세요.</span><div><button class="btn" id="tLecSwitch">강의 다시 고르기</button></div>`;return}
+  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의 코드(${esc(CODE)})를 찾을 수 없습니다.</b><span class="hint">교수님 화면의 QR 코드를 다시 찍어 주세요.</span>`;return}
   // 강의가 마감되면 모든 탭 위에 안내하고 입력을 막음
   if(liveActive()&&hbDown){reset();show("tWait");clearTimeout(tTimer);tDirty=false;tPending=-1;
     const cl=$("#tClosed");cl.hidden=false;cl.innerHTML=`<b>강의가 중단되었습니다.</b> 교수님 화면과 연결이 끊겨 지금은 입력할 수 없습니다.`;
@@ -3902,11 +3910,11 @@ function renderTeam(){
   {const cl=$("#tClosed"),was=renderTeam.phase;renderTeam.phase=L.phase;
     cl.hidden=L.phase!=="done";
     if(L.phase==="done"){clearTimeout(tTimer);tDirty=false;
-      cl.innerHTML=`<b>강의가 마감되었습니다.</b> 더 이상 입력할 수 없습니다. 수고하셨습니다.`;
-      if(was==="pick"||was==="play")toast("강의가 마감되었습니다. 더 이상 입력할 수 없습니다.")}
+      cl.innerHTML=`<b>강의가 종료되었습니다.</b> 진행하던 빙고는 모두 중단되었습니다.`;
+      if(was==="pick"||was==="play")toast("강의가 종료되었습니다.")}
     else if(was==="done"&&(L.phase==="pick"||L.phase==="play"))toast("교수님이 강의를 다시 열었습니다. 하던 판에서 이어서 진행합니다.")}
   if(!liveActive()){reset();show("tWait");
-    $("#tWait").innerHTML=L.phase==="done"?`<b>강의가 끝났습니다.</b><span class='hint'>수고하셨습니다.</span><div><button class="btn" id="tLecSwitch2">다른 강의 고르기</button></div>`
+    $("#tWait").innerHTML=L.phase==="done"?`<b>수고하셨습니다.</b>`
       :"<b>교수님이 훈련을 시작하기를 기다리는 중입니다.</b><span class='hint'>시작되면 이 화면에 참가 버튼이 나타납니다. 화면을 닫지 말고 기다려 주세요.</span>";return}
   applyLiveContext();
   if(P.sid===L.sid&&P.bid)myBid=P.bid;else myBid="";
@@ -3914,7 +3922,7 @@ function renderTeam(){
   $("#tCaseWrap").hidden=true;   // 스마트폰: 훈련 사례는 ‘상황·위험예지·만다라트’ 탭에서 봅니다.
   $("#tLead").innerHTML=`- ${L.title?esc(L.title)+" · ":""}${L.mode==="team"?"조별전":"개인전"}<br>- ${L.src==="mand"&&L.mcase?`<b>핵심원인:</b> ${esc(L.mcase.coreThemes[L.ti].name)}`:"사례 빙고 문항"}<br>- 판 ${L.size}×${L.size} · 목표 ${L.target}줄`;   // 스마트폰에서 읽기 쉽게 세 줄로 나눔
   if(!myBid){show("tJoin");badge.hidden=true;
-    if(L.mode==="team"){$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">우리 조를 눌러 참가하세요</h2><div class="chips">${LIST.map(b=>{const taken=b.owned&&b.own!==UID&&!(P.sid===L.sid&&P.bid===b.bid);return `<button class="btn" data-join="${b.no}" ${taken?"disabled":""}>${esc(b.name)}${taken?" · 다른 기기 참가 중":b.done?" · 입력 완료":""}</button>`}).join("")}</div><p class="hint" style="margin:0">한 조는 스마트폰 1대만 참가할 수 있습니다. 이미 참가 중인 조는 고를 수 없습니다.</p><div></div><div><button class="btn ghost" id="tLecSwitch">다른 강의 고르기</button></div>`}
+    if(L.mode==="team"){$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">우리 조를 눌러 참가하세요</h2><div class="chips">${LIST.map(b=>{const taken=b.owned&&b.own!==UID&&!(P.sid===L.sid&&P.bid===b.bid);return `<button class="btn" data-join="${b.no}" ${taken?"disabled":""}>${esc(b.name)}${taken?" · 다른 기기 참가 중":b.done?" · 입력 완료":""}</button>`}).join("")}</div><p class="hint" style="margin:0">한 조는 스마트폰 1대만 참가할 수 있습니다. 이미 참가 중인 조는 고를 수 없습니다.</p>`}
     else if(L.phase!=="pick"){$("#tJoinBody").innerHTML=`<b>이미 빙고가 시작되었습니다.</b><span class="hint">다음 훈련에 참가해 주세요.</span>`}
     else{$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">이름을 입력하고 참가하세요</h2><div class="addrow"><input id="tJoinName" type="text" maxlength="20" placeholder="이름(예: 상병 김안전)" aria-label="이름" value="${esc(P.name||"")}"><button class="btn primary" id="tJoinGo">참가</button></div>`}
     return}
@@ -4048,7 +4056,7 @@ function initLive(){
     if(!u){fauth.signInAnonymously().catch(()=>toast("Firebase에서 ‘익명’ 로그인을 켜 주세요(설치 안내 참고)."));return}
     if(UID===u.uid)return;UID=u.uid;
     if(ADMIN){setRole("host");S.cfg.fill="phone";BOOTCODE=HOSTINFO.code||"";setCode(HOSTINFO.code||"");newGame();go("w5");closeStaleMine()}
-    else{setRole("team");go("w5");const c=URLCODE||P.code||"";if(URLCODE){P.code=URLCODE;saveP()}setCode(c);if(!c)watchLectures(true)}
+    else{setRole("team");go("w5");const c=URLCODE||P.code||"";if(URLCODE){P.code=URLCODE;saveP()}setCode(c)}
   });
 }
 
