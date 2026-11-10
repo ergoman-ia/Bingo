@@ -557,7 +557,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
       <div class="board" id="tBoard"></div>
     </div>
   </section>
-  <p class="hint appver" style="text-align:center;margin:24px 0 0;font-size:.75rem">앱 버전 2026-09-29</p>
+  <p class="hint appver" style="text-align:center;margin:24px 0 0;font-size:.75rem">앱 버전 2026-11-10</p>
 </main>
 
 <div class="reveal" id="reveal" hidden role="dialog" aria-modal="true" aria-labelledby="rvText">
@@ -2963,7 +2963,7 @@ function renderKYT(){
   const T=[["1R","현상 파악","어떤 위험이 잠재하고 있는가?"],["2R","본질 추구","이것이 위험의 포인트다!"],["3R","대책 수립","당신이라면 어떻게 하겠는가?"],["4R","행동 목표 설정","우리는 이렇게 한다!"]];
   $("#rounds").innerHTML=T.map((t,i)=>{
     let body;
-    if(i===1){body=r.steps[1].map((s,j)=>`<div class="pt"><strong>${esc(s)}</strong>${m.coreThemes[j]&&(lk<0||lk===j)?`<div><button class="btn" data-theme="${j}">핵심원인 “${esc(m.coreThemes[j].name)}” 만다라트 →</button>${lk===j?` <span class="hint">이번 빙고의 핵심원인</span>`:""}</div>`:""}</div>`).join("")}
+    if(i===1){body=r.steps[1].map((s,j)=>lk>=0&&lk!==j?"":`<div class="pt"><strong>${esc(s)}</strong>${m.coreThemes[j]&&(lk<0||lk===j)?`<div><button class="btn" data-theme="${j}">핵심원인 “${esc(m.coreThemes[j].name)}” 만다라트 →</button>${lk===j?` <span class="hint">이번 빙고의 핵심원인</span>`:""}</div>`:""}</div>`).join("")}
     else if(i===3){body=`<ul>${r.steps[3].map(s=>`<li class="chant">${esc(s)}</li>`).join("")}</ul>`}
     else body=`<ul>${r.steps[i].map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`;
     return `<article class="rd${i===1?" key":""}"><header><span class="rn">${t[0]}</span><h3>${t[1]}</h3></header><div class="q">${t[2]}</div>${body}</article>`}).join("");
@@ -3310,7 +3310,7 @@ const sRef=()=>fdb.doc(`lectures/${CODE}`);
 const rRef=()=>fdb.doc(`lectures/${CODE}/meta/roster`);
 const bRef=(sid,bid)=>fdb.doc(`lectures/${CODE}/sessions/${sid}/boards/${bid}`);
 function fsErr(e){const c=e&&e.code;
-  if(c==="permission-denied")toast("권한이 없어 저장하지 못했습니다. 화면을 새로 고쳐 다시 시도해 주세요.");
+  if(c==="permission-denied")toast("권한이 없어 저장하지 못했습니다. 화면을 새로 고침한 뒤 다시 시도해 주세요.");
   else if(c==="unavailable")toast("인터넷 연결이 불안정합니다. 자동으로 다시 연결합니다.");
   else toast("저장 중 문제가 생겼습니다. 다시 시도해 주세요.");}
 function lines2(n){const L=[],d1=[],d2=[];for(let i=0;i<n;i++){const r=[],c=[];for(let k=0;k<n;k++){r.push(i*n+k);c.push(k*n+i)}L.push(r,c);d1.push(i*n+i);d2.push(i*n+(n-1-i))}L.push(d1,d2);return L}
@@ -3334,7 +3334,7 @@ const API={
     catch(e){return {err:e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"연결하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
   },
   async apiJoin(q){
-    const L=LIVE;if(!L||q.sid!==L.sid||!liveActive())return {err:"훈련이 새로 시작되었습니다. 화면을 새로 고쳐 주세요."};
+    const L=LIVE;if(!L||q.sid!==L.sid||!liveActive())return {err:"훈련이 새로 시작되었습니다. 화면을 새로 고침해 주세요."};
     const N=L.size*L.size;
     try{
       if(L.mode==="team"){
@@ -3892,7 +3892,7 @@ function renderTeam(){
       <div class="lecs">${LECTURES.map(x=>`<button class="lec" data-lec="${esc(x.code)}"><b>${esc(x.title||"위험예지 빙고 훈련")}</b><span>${esc(caseShort(x.ci||0))} · ${x.mode==="team"?`조별전 ${x.teams}개 조`:"개인전"} · 코드 ${esc(x.code)}</span></button>`).join("")||`<span class="hint">지금 열린 강의가 없습니다. 교수님이 강의를 열면 여기에 나타납니다.</span>`}</div>
       <div class="addrow"><input id="tCodeIn" type="text" maxlength="8" placeholder="강의 코드 6자리" aria-label="강의 코드" style="text-transform:uppercase"><button class="btn primary" id="tCodeGo">들어가기</button></div>`;return}
   if(!LIVE_LOADED){reset();show("tWait");$("#tWait").innerHTML="<b>강의 정보를 불러오는 중입니다…</b>";return}
-  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의 코드 ${esc(CODE)}를 찾을 수 없습니다.</b><span class="hint">QR 코드를 다시 찍거나 강의를 다시 골라 주세요.</span><div><button class="btn" id="tLecSwitch">강의 다시 고르기</button></div>`;return}
+  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의 코드(${esc(CODE)})를 찾을 수 없습니다.</b><span class="hint">QR 코드를 다시 찍거나 강의를 다시 골라 주세요.</span><div><button class="btn" id="tLecSwitch">강의 다시 고르기</button></div>`;return}
   // 강의가 마감되면 모든 탭 위에 안내하고 입력을 막음
   if(liveActive()&&hbDown){reset();show("tWait");clearTimeout(tTimer);tDirty=false;tPending=-1;
     const cl=$("#tClosed");cl.hidden=false;cl.innerHTML=`<b>강의가 중단되었습니다.</b> 교수님 화면과 연결이 끊겨 지금은 입력할 수 없습니다.`;
@@ -3912,7 +3912,7 @@ function renderTeam(){
   if(P.sid===L.sid&&P.bid)myBid=P.bid;else myBid="";
   $("#tTitle").textContent="빙고 훈련";
   $("#tCaseWrap").hidden=true;   // 스마트폰: 훈련 사례는 ‘상황·위험예지·만다라트’ 탭에서 봅니다.
-  $("#tLead").textContent=`${L.title?L.title+" · ":""}${L.mode==="team"?"조별전":"개인전"} · ${L.src==="mand"&&L.mcase?`핵심원인: ${L.mcase.coreThemes[L.ti].name}`:"사례 빙고 문항"} · 판 ${L.size}×${L.size} · 목표 ${L.target}줄`;
+  $("#tLead").innerHTML=`${L.title?esc(L.title)+" · ":""}${L.mode==="team"?"조별전":"개인전"}<br>${L.src==="mand"&&L.mcase?`핵심원인: ${esc(L.mcase.coreThemes[L.ti].name)}`:"사례 빙고 문항"}<br>판 ${L.size}×${L.size} · 목표 ${L.target}줄`;   // 스마트폰에서 읽기 쉽게 세 줄로 나눔
   if(!myBid){show("tJoin");badge.hidden=true;
     if(L.mode==="team"){$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">우리 조를 고르세요</h2><div class="chips">${LIST.map(b=>{const taken=b.owned&&b.own!==UID&&!(P.sid===L.sid&&P.bid===b.bid);return `<button class="btn" data-join="${b.no}" ${taken?"disabled":""}>${esc(b.name)}${taken?" · 다른 기기 참가 중":b.done?" · 입력 완료":""}</button>`}).join("")}</div><p class="hint" style="margin:0">한 조는 스마트폰 1대만 참가할 수 있습니다. 이미 참가 중인 조는 고를 수 없습니다.</p><div></div><div><button class="btn ghost" id="tLecSwitch">다른 강의 고르기</button></div>`}
     else if(L.phase!=="pick"){$("#tJoinBody").innerHTML=`<b>이미 빙고가 시작되었습니다.</b><span class="hint">다음 훈련에 참가해 주세요.</span>`}
@@ -3944,7 +3944,7 @@ function renderTeamPick(){
   const L=LIVE,n=L.size,N=n*n,b=tBoardObj(),done=!!TB.done;
   $("#tPick").hidden=false;["tWait","tJoin","tPlay"].forEach(k=>$("#"+k).hidden=true);
   if(document.activeElement!==$("#tName"))$("#tName").value=TB.name||"";
-  $("#tName").readOnly=done;
+  $("#tName").readOnly=done||L.mode==="team";   // 조 이름은 교수 PC에서 정한 이름 그대로(스마트폰에서 바꾸지 않음)
   const k=b.picks.filter(Boolean).length;$("#tCount").textContent=`${k}/${N}칸`;
   const g=$("#tGrid");g.className=`pgrid s${n}${done?"":" dnd"}`;g.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;
   g.innerHTML=b.picks.map((t,i)=>t
@@ -3969,7 +3969,7 @@ $("#tSwitch").onclick=async()=>{if(!confirm("조를 다시 고를까요? 지금 
     // 교수 PC가 참가 현황을 다시 보내기 전까지도 목록이 맞게 보이도록 이 기기가 아는 최신 상태로 바로 고침(입력 완료 여부·칸 수)
     const row=LIST.find(x=>x.bid===old);if(row){row.owned=false;row.own="";if(tb){row.done=!!tb.done;row.count=(tb.picks||[]).filter(Boolean).length}}}catch(e){}}
   P.bid="";P.sid="";saveP();myBid="";MINE=null;TB=null;renderTeam()};
-$("#tName").oninput=e=>{if(!TB)return;TB.name=e.target.value.trim()||TB.name;$("#teamBadge").textContent=TB.name;tSave()};
+$("#tName").oninput=e=>{if(!TB||(LIVE&&LIVE.mode==="team"))return;TB.name=e.target.value.trim()||TB.name;$("#teamBadge").textContent=TB.name;tSave()};
 $("#tSrc").onclick=e=>{const c=e.target.closest(".chip");if(c&&!c.disabled)tToggle(c.dataset.t)};
 dragSwap($("#tGrid"),{locked:()=>!TB||TB.done,render:()=>renderTeamPick(),
   swap:(a,c)=>{const b=tBoardObj();if(!b)return;[b.picks[a],b.picks[c]]=[b.picks[c],b.picks[a]];tSel=-1;tSave();renderTeamPick()}});
