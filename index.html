@@ -532,7 +532,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <div id="play" hidden style="display:grid;gap:16px">
       <div class="status">
         <div class="now" id="bNow"></div>
-        <div class="row"><button class="btn" id="bUndo">되돌리기</button><button class="btn" id="bRepick">판 다시 짜기</button></div>
+        <div class="row"><button class="btn" id="bUndo">되돌리기</button></div>
       </div>
       <div class="callcard" id="callCard" hidden></div>
       <div class="winbox" id="winBox" hidden></div>
@@ -3224,8 +3224,7 @@ function renderBingo(){
   $("#bInfo").textContent=`목록 ${pool().length}개 · 판 ${c.size}×${c.size}${G&&G.phase==="play"?" · 진행 중":G?" · 판 짜는 중":""}`;
   const phone=c.fill==="phone";$("#livePanel").hidden=!phone;
   $("#lecHist").hidden=!(phone&&FB&&ADMIN);
-  if(phone){renderLiveHost();$("#picker").hidden=true;$("#play").hidden=!(G&&G.live);$("#bRepick").hidden=true;if(G&&G.live)renderPlay();syncOpts();return}
-  $("#bRepick").hidden=false;
+  if(phone){renderLiveHost();$("#picker").hidden=true;$("#play").hidden=!(G&&G.live);if(G&&G.live)renderPlay();syncOpts();return}
   $("#picker").hidden=!G||G.phase!=="pick";$("#play").hidden=!G||G.phase!=="play";
   if(!G)return;
   if(G.phase==="pick")renderPicker();else renderPlay();
@@ -3279,7 +3278,6 @@ $("#bUndo").onclick=()=>{if(!G||!G.calls.length)return;if(G.live){liveUndo();ret
   x.hits.forEach(([bi,ci])=>G.boards[bi].cells[ci].m=false);G.deck.push(x.text);
   if(G.mode==="team"&&x.by!=="진행자"){const i=G.boards.findIndex(b=>b.name===x.by);if(i>=0)G.turn=i}
   replayLocal();revealCount=G.calls.length;bingoSeen=G.calls.length;renderBingo()};
-$("#bRepick").onclick=()=>{if(G.calls.length&&!confirm("지금까지 표시한 내용이 지워집니다. 판을 다시 짤까요?"))return;G.phase="pick";G.pt=0;pSel=-1;renderBingo()};
 $("#bNew").onclick=()=>{if(G&&(G.phase==="play"&&G.calls.length||G.boards.some(b=>b.picks.some(Boolean)))&&!confirm("새 게임을 준비하면 지금 판이 모두 지워집니다. 계속할까요?"))return;newGame()};
 const segHandler=(id,key,num)=>$(id).onclick=e=>{const b=e.target.closest("button");if(!b||b.disabled)return;
   const v=num?+b.dataset.v:b.dataset.v;if(S.cfg[key]===v)return;
@@ -3432,11 +3430,6 @@ const API={
       if(action==="undo"){
         if(!Sx.calls.length)return {err:"되돌릴 호출이 없습니다."};
         const x=Sx.calls.pop();if(x.team>=0)Sx.turn=x.team;Sx.results=calcR(Sx,bs);if((Sx.ack||0)>Sx.calls.length)Sx.ack=0;await writeS(Sx);return {ok:true};
-      }
-      if(action==="reopen"){
-        if(Sx.phase!=="play")return {err:"판 짜기로 돌아갈 수 없습니다."};
-        Object.assign(Sx,{phase:"pick",calls:[],turn:0,results:{},ack:0});
-        const batch=fdb.batch();bs.forEach(b=>batch.update(bRef(Sx.sid,b.bid),{done:false}));batch.set(sRef(),Sx);await batch.commit();return {ok:true};
       }
       if(action==="fillNoDevice"){   // 스마트폰이 없는 조의 판을 무작위로 채움(조별전만)
         if(Sx.phase!=="pick"||Sx.mode!=="team")return {err:"조별전 판 짜기 중에만 쓸 수 있습니다."};
@@ -3655,7 +3648,7 @@ function renderLiveHost(){
   const qr=qrSvg(joinUrl());
   const mine=L.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE;
   const head=`<div class="tbar"><div><span class="eyebrow">${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · ${L.mode==="team"?"조별전":"개인전"} · 강의 코드 ${esc(CODE)}${HOSTINFO.code===CODE&&HOSTINFO.pin?` · 진행자 PIN ${esc(HOSTINFO.pin)}`:""}</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2><div class="case-label">${caseLabel(L.ci,L.src==="mand"&&th?th.name:"")}</div>${mine?"":`<span class="hint">⚠ 이 PC에는 진행 권한이 없습니다. 아래 ‘이어서 진행’이 필요합니다.</span>`}</div>
-    <div class="row"><span class="hint">설정을 바꾸려면 ‘강의 끝내기’ 뒤 새로 여세요.</span>${L.phase==="play"?`<button class="btn" id="lvReopen">판 다시 짜기</button>`:""}<button class="btn" id="lvRestart" ${lecDone(L)?'disabled title="빙고가 난 강의는 다시 시작할 수 없습니다. 강의를 끝내고 새 강의를 개설하세요."':""}>이 강의에서 다시 시작</button><button class="btn" id="lvNew">새 강의 개설</button><button class="btn ghost" id="lvEnd">강의 끝내기</button></div></div>`;
+    <div class="row"><span class="hint">설정을 바꾸려면 ‘강의 끝내기’ 뒤 새로 여세요.</span><button class="btn" id="lvRestart" ${lecDone(L)?'disabled title="빙고가 난 강의는 다시 시작할 수 없습니다. 강의를 끝내고 새 강의를 개설하세요."':""}>이 강의에서 다시 시작</button><button class="btn" id="lvNew">새 강의 개설</button><button class="btn ghost" id="lvEnd">강의 끝내기</button></div></div>`;
   const qrBox=`<div class="qrrow"><button class="qr" id="lvQr" aria-label="QR 코드 크게 보기">${qr}</button><div style="display:grid;gap:6px;min-width:0"><b>QR 코드를 찍어 참가하세요 · 강의 코드 <span style="font-family:var(--mono);font-size:1.2em;color:var(--signal-ink)">${esc(CODE)}</span></b><span class="hint">${L.mode==="team"?"조마다 스마트폰 1대로 참가해 조 번호를 고릅니다.":"각자 스마트폰으로 참가해 이름을 입력합니다."}</span><code class="url">${esc(joinUrl())}</code><div class="row"><button class="btn" id="lvQrBig">QR 크게 보기</button></div></div></div>`;
   if(L.phase==="pick"){
     const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?"입력 완료":b.kind==="team"&&!b.owned?"기기 연결 전":`${b.count}/${N}칸 입력 중`}</span>${b.kind==="team"&&b.owned?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-release="${b.bid}">기기 해제</button>`:""}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
@@ -3686,7 +3679,6 @@ $("#livePanel").addEventListener("click",e=>{
   if(b.id==="lvClaim"){(async()=>{const r=await API.apiClaim($("#lvCode").value,$("#lvPin").value);if(r.err){toast(r.err);return}$("#lvPin").value="";await openLecture({...r.lec,code:r.code},true)})()}
   if(b.id==="lvPlay")adm("play");
   if(b.id==="lvRevClose")reviewClose();
-  if(b.id==="lvReopen"&&confirm("호출 기록을 지우고 판 짜기로 돌아갈까요? 모든 판이 ‘입력 중’으로 바뀝니다."))adm("reopen");
   if(b.id==="lvEnd"&&confirm("강의를 끝낼까요? 참가자 화면도 종료되고, 강의 목록에서 사라집니다.")){adm("end");G=null}
   if(b.id==="lvQr"||b.id==="lvQrBig")showQrBig();
 });
