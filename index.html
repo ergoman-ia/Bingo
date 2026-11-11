@@ -3468,7 +3468,9 @@ function hostTick(){
 }
 function scheduleRoster(){
   if(!ADMIN||!LIVE)return;clearTimeout(rosterT);
-  rosterT=setTimeout(()=>{const body={sid:LIVE.sid,list:rosterOf(curBoards())},j=JSON.stringify(body);
+  rosterT=setTimeout(()=>{if(!LIVE||!CODE||!fdb)return;
+    // 조별전: 대표폰이 ‘접속 끊김’인 조를 함께 적어, 같은 조 참여폰 화면에 안내가 나오게 함
+    const body={sid:LIVE.sid,list:rosterOf(curBoards()).map(r=>r.kind==="team"?{...r,off:presState(r)==="off"}:r)},j=JSON.stringify(body);
     if(j===rosterLast)return;rosterLast=j;rRef().set(body).catch(()=>{rosterLast=""})},1000);
 }
 function resubBoards(){
@@ -3520,7 +3522,7 @@ function presState(b){if(!b||!b.owned)return "";const q=PRES[b.bid],now=Date.now
 /* 조별전 접속 신호는 기기마다 따로 둔 문서(pres/기기)에 남깁니다. 판 문서를 건드리지 않으므로 같은 조 참여폰에는 전달되지 않고 교수 PC만 받습니다.
    - 대표폰 30초, 참여폰 60초 간격(참여폰이 많아 서버 쓰기 횟수를 아끼려고 길게 둠)
    - 보안 규칙에 pres 경로가 아직 없어 거절되면(presLegacy) 대표폰은 예전처럼 판 문서에 신호를 남기고, 참여폰은 신호를 보내지 않습니다. */
-let presLegacy=false,PV={},unsubP=null;
+let presLegacy=false,presDeny=0,PV={},unsubP=null;
 const pRef=sid=>fdb.doc(`lectures/${CODE}/sessions/${sid}/pres/${UID}`);
 const viewDead=()=>presDead()*2;
 const viewN=bid=>{const now=Date.now(),dead=viewDead();return Object.values(PV).filter(x=>x.bid===bid&&x.role==="view"&&x.at&&now-x.at<dead).length};
@@ -3543,7 +3545,9 @@ function presPing(){
   if(!view&&(MINE.owner!==UID||tDirty))return;
   const now=Date.now();if(now-presLast<(view?presMs()*2:presMs()))return;presLast=now;
   if(LIVE.mode==="team"&&!presLegacy){
-    pRef(LIVE.sid).set({bid:myBid,role:view?"view":"rep",at:now}).catch(e=>{if(e&&e.code==="permission-denied"){presLegacy=true;presLast=0}});return}
+    pRef(LIVE.sid).set({bid:myBid,role:view?"view":"rep",at:now}).then(()=>{presDeny=0}).catch(e=>{
+      // 강의가 끝나는 순간처럼 한 번만 거절되는 경우가 있어, 진행 중에 두 번 연달아 거절될 때만 예전 방식(보안 규칙을 새로 게시하지 않은 경우)으로 바꿈
+      if(e&&e.code==="permission-denied"&&liveActive()&&++presDeny>=2){presLegacy=true;presLast=0}});return}
   if(view)return;
   // 판 짜기 중에는 판 저장과 같은 모양으로 저장된 내용을 그대로 다시 적고(바뀌는 것은 시각뿐), 빙고 진행 중에는 시각만 적음
   bRef(LIVE.sid,myBid).update(LIVE.phase==="pick"&&LIVE.mode!=="team"?{name:MINE.name,picks:MINE.picks,w:MINE.w||{},done:!!MINE.done,updated:now}:{updated:now}).catch(()=>{});
@@ -3598,7 +3602,8 @@ window.addEventListener("pageshow",e=>{if(e.persisted)hostBeat(true)});
 setInterval(()=>{hostBeat(false);hbTickAt=Date.now();
   hbCheck();presPing();
   // 교수 PC: 조별 접속 표시가 바뀌면(접속 확인 중 → 접속 끊김 등) 참가 현황을 다시 그림
-  if(ROLE==="host"&&ADMIN&&LIVE&&liveActive()&&S.cfg.fill==="phone"){const sg=presSigNow();if(sg!==presSig){presSig=sg;renderBingo()}}
+  if(ROLE==="host"&&ADMIN&&LIVE&&liveActive()&&S.cfg.fill==="phone"){const sg=presSigNow();if(sg!==presSig){presSig=sg;renderBingo()}
+    if(LIVE.mode==="team"){const og=LIST.map(b=>presState(b)==="off"?1:0).join("");if(og!==scheduleRoster.og){scheduleRoster.og=og;scheduleRoster()}}}
 },Math.min(5000,HB_MS));
 /* 이 PC가 진행하던 강의를 마감(이어서 진행할 수 있도록 단계는 기억) */
 async function closeCurrentLecture(){
@@ -3822,13 +3827,16 @@ function renderHist(){
   const rows=HIST;
   $("#lecHistBody").innerHTML=`<p class="hint" style="margin:0">Firestore에 저장된 강의 목록입니다. 강의 기록은 어느 PC에서든 마스터 PIN을 넣어야 삭제됩니다. 삭제하면 판·호출 기록까지 모두 지워지며 되돌릴 수 없습니다.</p>
     <div class="lh-list">${rows.map(L=>{const res=L.results||{},wins=Object.keys(res).filter(k=>res[k]&&res[k].rank).length;
+      if(L.deleting)return `<div class="lh-row" data-code="${esc(L.code)}"><div class="lh-top"><b>${esc(L.title||"위험예지 빙고 훈련")} <span class="lh-badge">삭제가 끝나지 않음</span></b>
+        <span class="row"><button class="btn primary" data-lhdel="${esc(L.code)}">다시 삭제</button></span></div>
+        <div class="lh-meta">${fmtDT(L.deleting)}에 삭제를 시작했지만 끝나지 않았습니다. 기록 일부가 이미 지워졌을 수 있어 열어 볼 수 없습니다. ‘다시 삭제’를 눌러 마저 지워 주세요.</div></div>`;
       return `<div class="lh-row${L.open?" open":""}" data-code="${esc(L.code)}"><div class="lh-top"><b>${esc(L.title||"위험예지 빙고 훈련")} <span class="lh-badge">${L.open?"진행 중":lecDone(L)?"끝남 · 빙고 완료":"끝남 · 빙고 미완료"}</span></b>
         <span class="row"><button class="btn" data-lhview="${esc(L.code)}">자세히</button><button class="btn" data-lhload="${esc(L.code)}">${L.phase==="done"?(lecDone(L)?"결과 보기":"이어서 진행"):"이 PC에서 진행"}</button><button class="btn ghost" data-lhdel="${esc(L.code)}">삭제</button></span></div>
         <div class="lh-meta">개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 사례 ${(L.ci||0)+1}: ${esc(caseShort(L.ci||0))} · ${L.src==="mand"&&L.mcase?`핵심원인: ${esc((L.mcase.coreThemes[L.ti]||{}).name||"")}`:"사례 빙고 문항"} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 호출 ${(L.calls||[]).length}번 · 빙고 ${wins?`${wins}${L.mode==="team"?"개 조":"명"}`:"없음"}${lecMine(L)?"":" · 다른 PC에서 연 강의"}</div>
         <div class="lh-detail" hidden></div></div>`}).join("")||`<span class="hint">저장된 강의가 없습니다.</span>`}</div>`;
 }
 async function showHistDetail(code,box){
-  const L=HIST.find(x=>x.code===code);if(!L)return;
+  const L=HIST.find(x=>x.code===code);if(!L||L.deleting)return;
   if(!box.hidden){box.hidden=true;return}
   let names={};try{const r=await fdb.doc(`lectures/${code}/meta/roster`).get();if(r.exists&&r.data().sid===L.sid)(r.data().list||[]).forEach(b=>names[b.bid]=b.name)}catch(e){}
   const res=L.results||{},wins=Object.keys(res).filter(k=>res[k]&&res[k].rank).map(k=>names[k]||k);
@@ -3871,25 +3879,48 @@ async function claimFor(code,title){
   try{await putClaim(code,pin);return true}
   catch(e){toast(e&&e.code==="permission-denied"?"입력한 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return false}
 }
+/* 서버 응답을 오래 기다리지 않도록(인터넷이 끊기면 저장 요청이 응답 없이 기다리기만 함) */
+const DEL_MS=window.KYT_DEL_MS||15000;
+const withT=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no({code:"timeout"}),ms))]);
 async function deleteLecture(L){
   const code=L.code,sids=[...new Set([...(L.sids||[]),L.sid].filter(Boolean))];
-  for(const sid of sids){const path=`lectures/${code}/sessions/${sid}/boards`;const q=await fdb.collection(path).get();for(const d of q.docs)await fdb.doc(`${path}/${d.id}`).delete();
-    try{const pp=`lectures/${code}/sessions/${sid}/pres`,pq=await fdb.collection(pp).get();for(const d of pq.docs)await fdb.doc(`${pp}/${d.id}`).delete()}catch(e){}}
-  for(const x of ["meta/roster","meta/hb","secret/pin"]){try{await fdb.doc(`lectures/${code}/${x}`).delete()}catch(e){}}
-  try{const q=await fdb.collection(`lectures/${code}/hostClaims`).get();for(const d of q.docs)if(d.id!==UID)await fdb.doc(`lectures/${code}/hostClaims/${d.id}`).delete()}catch(e){}
-  await fdb.doc(`lectures/${code}`).delete();
-  try{await fdb.doc(`lectures/${code}/hostClaims/${UID}`).delete()}catch(e){}
-  try{await fdb.doc(`lectures/${code}/masterOk/${UID}`).delete()}catch(e){}
-  if(CODE===code){HOSTINFO={};saveHost();setCode("");G=null;renderBingo()}
+  /* 지우는 동안 이 PC가 강의 문서를 다시 쓰지 않도록 먼저 연결을 끊음
+     (예전에는 지운 뒤에 참가 현황·연결 신호가 늦게 저장되어 meta 문서만 남는 일이 있었음) */
+  clearTimeout(rosterT);
+  if(CODE===code){HOSTINFO={};saveHost();setCode("");G=null}
+  /* 먼저 ‘삭제 중’ 표시를 남기고 강의를 마감합니다(다른 PC·스마트폰도 신호를 멈춤).
+     삭제가 중간에 멈추면 강의 기록에 ‘삭제가 끝나지 않음’으로 보이고, ‘다시 삭제’만 할 수 있습니다.
+     - 인터넷이 끊겨 표시를 남기지 못하면 아무것도 지우지 않고 멈춥니다.
+     - 보안 규칙을 새로 게시하지 않아 권한이 없을 때만 표시 없이 예전처럼 지웁니다. */
+  try{await withT(fdb.doc(`lectures/${code}`).update({deleting:Date.now(),phase:"done",open:false,ended:L.ended||Date.now()}),DEL_MS)}
+  catch(e){if(!(e&&e.code==="permission-denied"))throw e}
+  const del=p=>withT(fdb.doc(p).delete(),DEL_MS).catch(()=>{});
+  const wipe=async()=>{
+    for(const sid of sids)for(const c of ["boards","pres"]){const path=`lectures/${code}/sessions/${sid}/${c}`;
+      try{const q=await fdb.collection(path).get();await Promise.all(q.docs.map(d=>del(`${path}/${d.id}`)))}catch(e){}}
+    await Promise.all(["meta/roster","meta/hb","secret/pin"].map(x=>del(`lectures/${code}/${x}`)));
+  };
+  await wipe();
+  try{const q=await fdb.collection(`lectures/${code}/hostClaims`).get();await Promise.all(q.docs.filter(d=>d.id!==UID).map(d=>del(`lectures/${code}/hostClaims/${d.id}`)))}catch(e){}
+  try{const q=await fdb.collection(`lectures/${code}/masterOk`).get();await Promise.all(q.docs.filter(d=>d.id!==UID).map(d=>del(`lectures/${code}/masterOk/${d.id}`)))}catch(e){}
+  await withT(fdb.doc(`lectures/${code}`).delete(),DEL_MS);
+  // 강의 문서를 지운 뒤에는 누구도 새로 쓸 수 없으므로, 그사이 다시 생긴 문서가 있으면 한 번 더 지움
+  await wipe();
+  await del(`lectures/${code}/hostClaims/${UID}`);
+  await del(`lectures/${code}/masterOk/${UID}`);
+  if(CODE===code){HOSTINFO={};saveHost();setCode("");G=null}
+  renderBingo();
 }
 async function histDelete(code){
   const L=HIST.find(x=>x.code===code);if(!L)return;
-  if(!confirm(`‘${L.title||"위험예지 빙고 훈련"}’ 기록을 삭제할까요?${L.open?"\n진행 중인 강의입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
+  if(!confirm(L.deleting?`‘${L.title||"위험예지 빙고 훈련"}’은(는) 삭제가 끝나지 않은 강의입니다.\n남은 기록을 마저 삭제할까요?`
+    :`‘${L.title||"위험예지 빙고 훈련"}’ 기록을 삭제할까요?${L.open?"\n진행 중인 강의입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
   // 삭제는 강의를 연 PC여도 항상 마스터 PIN을 확인합니다.
   const pin=(await askPin(code,"master",L.title)).normalize("NFC").trim();if(!pin)return;
   try{await putMaster(code,pin)}
   catch(e){toast(e&&e.code==="permission-denied"?"마스터 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return}
-  try{await deleteLecture(L);toast("강의 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 보안 규칙(firestore.rules)을 새로 게시했는지 확인해 주세요.":"삭제하지 못했습니다. 인터넷 연결을 확인해 주세요.")}
+  toast("강의 기록을 삭제하는 중입니다…");
+  try{await deleteLecture(L);toast("강의 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 보안 규칙(firestore.rules)을 새로 게시했는지 확인해 주세요.":"삭제가 끝나지 않았습니다. 인터넷 연결을 확인한 뒤 강의 기록에서 ‘다시 삭제’를 눌러 주세요.")}
   loadHist();
 }
 $("#lecHist").addEventListener("toggle",()=>{if($("#lecHist").open)loadHist()});
@@ -3908,6 +3939,7 @@ $("#lecHistBody").addEventListener("click",e=>{const b=e.target.closest("button"
 const lecCase=x=>plainCase(x.ci||0,x.src==="mand"&&x.mcase?(x.mcase.coreThemes[x.ti]||{}).name:"");
 const lecName=(x,code)=>`‘${x.title||"위험예지 빙고 훈련"}’`;
 async function openLecture(L,claimed){
+  if(L.deleting){toast("삭제가 끝나지 않은 강의라 열 수 없습니다. 강의 기록에서 ‘다시 삭제’를 눌러 주세요.");return}
   const code=L.code,done=L.phase==="done",complete=lecDone(L);
   const lines=[];let warn="";
   if(liveActive()&&CODE!==code){lines.push(`· 지금 진행 중: ${lecName(LIVE,CODE)}`,`   ${lecCase(LIVE)}`);warn="지금 강의는 마감됩니다(강의 기록에서 이어서 진행할 수 있습니다).\n"}
@@ -4124,7 +4156,7 @@ function renderTeamPick(){
   $("#tSrc").innerHTML=
     groups().map(g=>`<div class="grp">${g.k>=0?`<div class="grp-title"><span class="eyebrow" style="color:var(--ink2)">세부요인:</span><span class="grp-head" style="background:${colorVar(g.k)}">${esc(g.name)}</span></div>`:`<span class="eyebrow" style="color:var(--ink2)">${esc(g.name)}</span>`}<div class="chips">${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");   // 스마트폰: 번호 없이 ‘세부요인: 이름’ 한 줄로 표시
   const dn=LIST.filter(x=>x.done).length;
-  $("#tState").innerHTML=view?(done?`<b>입력 완료!</b> 다른 조를 기다리는 중입니다(완료 ${dn}/${LIST.length}). 고치려면 대표폰에서 ‘다시 고치기’를 누르세요.`:full?`<b>판이 다 찼습니다.</b> 조원과 함께 칸을 조정한 뒤, 대표폰에서 ‘입력 완료’를 누르세요.`:`<b>${N-k}칸 남았습니다.</b> 조원 모두 항목을 골라 넣을 수 있습니다. 같은 항목은 한 번만 들어갑니다.`):done?`<b>입력 완료!</b> 다른 ${L.mode==="team"?"조":"참가자"}를 기다리는 중입니다(완료 ${dn}/${LIST.length}).`:full?`<b>판이 다 찼습니다.</b> 토론 결과가 맞으면 ‘입력 완료’를 누르세요.`:`${N-k}칸 남았습니다.${N-k>FILL_MAX?` 토론으로 채우다가 ${FILL_MAX}칸 이하가 남으면 ‘남은 칸 무작위로 채우기’를 쓸 수 있습니다.`:""}`;
+  $("#tState").innerHTML=repWarn(done)+(view?(done?`<b>입력 완료!</b> 다른 조를 기다리는 중입니다(완료 ${dn}/${LIST.length}). 고치려면 대표폰에서 ‘다시 고치기’를 누르세요.`:full?`<b>판이 다 찼습니다.</b> 조원과 함께 칸을 조정한 뒤, 대표폰에서 ‘입력 완료’를 누르세요.`:`<b>${N-k}칸 남았습니다.</b> 조원 모두 항목을 골라 넣을 수 있습니다. 같은 항목은 한 번만 들어갑니다.`):done?`<b>입력 완료!</b> 다른 ${L.mode==="team"?"조":"참가자"}를 기다리는 중입니다(완료 ${dn}/${LIST.length}).`:full?`<b>판이 다 찼습니다.</b> 토론 결과가 맞으면 ‘입력 완료’를 누르세요.`:`${N-k}칸 남았습니다.${N-k>FILL_MAX?` 토론으로 채우다가 ${FILL_MAX}칸 이하가 남으면 ‘남은 칸 무작위로 채우기’를 쓸 수 있습니다.`:""}`);
   const dbtn=$("#tDone");dbtn.textContent=done?"다시 고치기":"입력 완료";dbtn.disabled=view||(!done&&!full);dbtn.hidden=view;
   {const r=N-k;$("#tFill").disabled=ro||full||r>FILL_MAX;$("#tFill").title=view?"대표폰에서만 쓸 수 있습니다":r>FILL_MAX?`남은 칸이 ${FILL_MAX}칸 이하일 때 쓸 수 있습니다(지금 ${r}칸)`:""}$("#tClear").disabled=ro||!k;
   $("#tFill").hidden=view;$("#tClear").hidden=view;
@@ -4133,6 +4165,14 @@ function renderTeamPick(){
 }
 const viewOnly=()=>{if(!isView())return false;toast("입력 완료·무작위 채우기·전체 비우기는 대표폰에서만 할 수 있습니다.");return true};
 
+/* 참여폰: 우리 조 대표폰이 없거나 연결이 끊기면 안내(교수님이 대신 입력 완료·호출할 수 있음) */
+function repWarn(done){
+  if(!isView()||!LIVE||!liveActive()||done&&LIVE.phase==="pick")return "";
+  const row=LIST.find(x=>x.bid===myBid);if(!row||row.host)return "";
+  const m=row.off?"우리 조 대표폰의 연결이 끊겼습니다.":!row.owned?"우리 조에 대표폰이 없습니다.":"";if(!m)return "";
+  const how=LIVE.phase==="pick"?(LIVE.lock?"교수님께 알려 주세요. 교수님이 대신 ‘입력 완료’를 할 수 있습니다.":"‘조·역할 바꾸기’로 대표폰을 맡거나 교수님께 알려 주세요.")
+    :"교수님께 알려 주세요. 우리 조 차례에는 교수님이 대신 호출할 수 있습니다.";
+  return `<span class="repwarn" style="display:block;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#fff3cd;color:#664d03;font-weight:600">⚠ ${m} ${how}</span>`}
 function tToggle(text){const b=tBoardObj();if(!b||TB.done)return;const i=b.picks.indexOf(text);
   if(shared()){if(i>=0){tOp({t:"rm",text});return}
     const e=tSel>=0&&b.picks[tSel]===null?tSel:b.picks.indexOf(null);if(e<0){toast(OPMSG.full);return}
@@ -4174,7 +4214,7 @@ function renderTeamPlay(){
   if(tSentN>=0&&L.calls.length>tSentN)tSentN=-1;
   const turnName=team?((LIST.find(x=>x.no-1===L.turn)||{}).name||`${L.turn+1}조`):"";
   $("#tNow").innerHTML=over?`<em>빙고로 게임이 끝났습니다</em> — 빙고: ${LIST.filter(x=>R0[x.bid]&&R0[x.bid].rank).map(x=>esc(x.name)).join(", ")}`:team?(my?(view?"<em>우리 조 차례입니다!</em> 대표폰에서 한 칸을 골라 호출합니다.":tSentN>=0?"호출을 보냈습니다. 큰 화면을 보세요.":"<em>우리 조 차례입니다!</em> 판에서 한 칸을 누르고 호출하세요."):`지금 차례: <em>${esc(turnName)}</em> · 우리 조 ${b.lines}줄`):`교수님이 호출하는 위험요인을 기다리세요 · 완성 ${b.lines}줄 / 목표 ${L.target}줄`;
-  if(view&&!over)$("#tNow").insertAdjacentHTML("beforeend",` <span class="hint">· 참여폰(호출은 대표폰에서)</span>`);
+  if(view&&!over)$("#tNow").insertAdjacentHTML("beforeend",` <span class="hint">· 참여폰(호출은 대표폰에서)</span>${repWarn(false)}`);
   const cf=$("#tConfirm");
   if(my&&!view&&tPending>=0&&tSentN<0&&b.cells[tPending]&&!b.cells[tPending].m){cf.hidden=false;
     const tx=b.cells[tPending].t;
