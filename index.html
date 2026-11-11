@@ -159,6 +159,7 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .pill{border-radius:99px;padding:2px 9px;background:var(--sunk)}
 .pill.win{background:var(--signal);color:#fff}
 .pill.turn{background:var(--signal);color:#fff}
+.pill.off{background:var(--ink);color:var(--ground)}   /* 빙고 진행 중: 스마트폰 접속이 끊긴 판 */
 .bgrid{display:grid;gap:4px;aspect-ratio:1/1;max-width:100%}
 .bscroll{overflow-x:auto}
 .bgrid .cell{font-size:.8rem;font-weight:500;background:var(--ground);border-color:var(--line);cursor:pointer;position:relative;padding:4px}
@@ -3188,6 +3189,7 @@ function renderPlay(){
     const pills=[`<span class="pill">${b.lines}줄</span>`];
     if(b.cells.some(x=>x.w))pills.push(`<span class="pill">${wsum(b)}점</span>`);
     if(b.rank)pills.push(`<span class="pill win">빙고</span>`);else if(isTurn)pills.push(`<span class="pill turn">차례</span>`);
+    if(G.live&&ROLE==="host"&&LIVE&&liveActive()&&presState(LIST.find(x=>x.bid===b.bid))==="off")pills.push(`<span class="pill off">접속 끊김</span>`);   // 스마트폰이 사이트를 나간 조(사람)
     return `<div class="board${isTurn?" turn":""}${b.rank?" win":""}" data-b="${bi}">
       <div class="bhead"><span class="bname">${esc(b.name)}</span><span class="score">${pills.join("")}</span></div>
       <div><div class="bgrid s${n}" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${b.cells.map((x,ci)=>{
@@ -3465,12 +3467,17 @@ function scheduleRoster(){
 function resubBoards(){
   const sid=LIVE&&LIVE.sid?LIVE.sid:null;
   if(ADMIN&&sid){
-    if(boardsSid!==sid){if(unsubB)unsubB();boardsSid=sid;BOARDS=[];PRES={};presStart=Date.now();
-      unsubB=fdb.collection(`lectures/${CODE}/sessions/${sid}/boards`).onSnapshot(q=>{BOARDS=q.docs.map(d=>d.data()).sort(byOrder);presTrack();LIST=rosterOf(curBoards());onLive();hostTick();scheduleRoster()},fsErr)}
+    if(boardsSid!==sid){if(unsubB)unsubB();boardsSid=sid;BOARDS=[];PRES={};presStart=Date.now();presInit=false;boardsSig="";
+      unsubB=fdb.collection(`lectures/${CODE}/sessions/${sid}/boards`).onSnapshot(q=>{BOARDS=q.docs.map(d=>d.data()).sort(byOrder);presTrack();
+        {const sg=sansUpd(BOARDS);if(sg===boardsSig)return;boardsSig=sg}   // 접속 신호만 바뀌었으면 화면을 다시 그리지 않음(표시는 5초마다 확인)
+        LIST=rosterOf(curBoards());onLive();hostTick();scheduleRoster()},fsErr)}
   }else if(unsubB){unsubB();unsubB=null;boardsSid=null;BOARDS=[]}
   const key=ROLE==="team"&&sid&&P.sid===sid&&P.bid?`${sid}/${P.bid}`:"";
   if(key!==mineKey){if(unsubMine)unsubMine();unsubMine=null;mineKey=key;MINE=null;
-    if(key)unsubMine=bRef(sid,P.bid).onSnapshot(d=>{MINE=d.exists?d.data():null;if(MINE&&MINE.owner&&MINE.owner!==UID&&!ADMIN){P.bid="";saveP();MINE=null;toast("다른 기기가 이 조로 참가했습니다. 다시 참가해 주세요.")}onLive()},
+    mineSig="";
+    if(key)unsubMine=bRef(sid,P.bid).onSnapshot(d=>{MINE=d.exists?d.data():null;
+      {const sg=sansUpd(MINE);if(MINE&&sg===mineSig)return;mineSig=sg}   /* 내 접속 신호만 바뀌었으면 화면을 다시 그리지 않음 */
+      if(MINE&&MINE.owner&&MINE.owner!==UID&&!ADMIN){P.bid="";saveP();MINE=null;toast("다른 기기가 이 조로 참가했습니다. 다시 참가해 주세요.")}onLive()},
       ()=>{P.bid="";P.sid="";saveP();mineKey="";MINE=null;myBid="";onLive()})}
 }
 /* ── 교수 화면 연결 신호(하트비트) ──
@@ -3487,20 +3494,26 @@ const hbFresh=now=>!!hbAt&&now-hbAt-hbSk()<HB_DEAD;
 /* 교수 PC: 신호를 보내지 못한 채 2분이 넘으면(절전에서 깨어남, 인터넷 끊김) 스마트폰은 이미 중단 상태이므로
    자동으로 이어 가지 않고 ‘이어서 진행’을 다시 고르게 합니다. hbTickAt=마지막 타이머 시각, hbPend=아직 서버에 닿지 않은 가장 오래된 신호 시각 */
 let hbTickAt=0,hbPend=0;
-/* 조별전 판 짜기: 스마트폰이 실제로 접속해 있는지 표시(스마트폰이 20초마다 자기 판에 신호를 남기고, 교수 PC는 50초 동안 신호가 없으면 ‘접속 끊김’으로 봄) */
-const PRES_MS=window.KYT_PRES_MS||20000,PRES_DEAD=window.KYT_PRES_DEAD||50000;
-let PRES={},presStart=0,presLast=0,presSig="";
-function presTrack(){const now=Date.now();BOARDS.forEach(b=>{if(b.kind!=="team")return;const q=PRES[b.bid],v=b.updated||0,o=b.owner||"";
-  if(!q){PRES[b.bid]={v,o,at:0};return}   // 처음 본 값은 예전 기록일 수 있어 ‘접속’으로 치지 않음
-  if(v!==q.v||(o&&o!==q.o))q.at=now;if(!o)q.at=0;q.v=v;q.o=o})}
-function presState(b){if(!(b.kind==="team"&&b.owned))return "";const q=PRES[b.bid],now=Date.now();
-  if(q&&q.at&&now-q.at<PRES_DEAD)return "on";return now-presStart<PRES_DEAD?"chk":"off"}
+/* 스마트폰이 실제로 접속해 있는지 표시(조별전·개인전, 판 짜기·빙고 진행 중 모두)
+   - 스마트폰이 자기 판에 주기적으로 신호를 남깁니다: 조별전 30초, 개인전 60초(참가자가 많아 서버 쓰기 횟수를 아끼려고 길게 둠).
+     판을 저장한 직후에는 그 저장이 신호를 겸하므로 따로 보내지 않습니다.
+   - 교수 PC는 신호 간격의 2.5배(조별전 75초, 개인전 150초) 동안 신호가 없으면 ‘접속 끊김’으로 봅니다. */
+const PRES_MS=window.KYT_PRES_MS||30000;
+const presMs=()=>LIVE&&LIVE.mode==="solo"?PRES_MS*2:PRES_MS,presDead=()=>presMs()*2.5;
+const DONE_LOCK_MS=window.KYT_DONE_LOCK_MS||12*3600*1000;   // 스마트폰: 강의가 끝난 뒤 메뉴를 잠가 두는 시간(12시간). 그 뒤에는 다시 열람할 수 있음
+let PRES={},presStart=0,presLast=0,presSig="",presInit=false,boardsSig="",mineSig="";
+const sansUpd=x=>JSON.stringify(x,(k,v)=>k==="updated"?undefined:v);   // 접속 신호(updated)만 바뀐 것인지 가릴 때 씀
+function presTrack(){const now=Date.now();BOARDS.forEach(b=>{const q=PRES[b.bid],v=b.updated||0,o=b.owner||"";
+  if(!q){PRES[b.bid]={v,o,at:presInit&&o?now:0};return}   // 강의를 띄우며 처음 본 값은 예전 기록일 수 있어 ‘접속’으로 치지 않음(그 뒤 새로 들어온 참가자는 접속으로 봄)
+  if(v!==q.v||(o&&o!==q.o))q.at=now;if(!o)q.at=0;q.v=v;q.o=o});presInit=true}
+function presState(b){if(!b||!b.owned)return "";const q=PRES[b.bid],now=Date.now(),dead=presDead();
+  if(q&&q.at&&now-q.at<dead)return "on";return now-presStart<dead?"chk":"off"}
 function presPing(){
-  if(ROLE!=="team"||!fdb||!CODE||!LIVE||!liveActive()||LIVE.mode!=="team"||LIVE.phase!=="pick"||hbDown||hbVerify||!hbKnown||document.hidden)return;
+  if(ROLE!=="team"||!fdb||!CODE||!LIVE||!liveActive()||hbDown||hbVerify||!hbKnown||document.hidden)return;
   if(!MINE||!myBid||MINE.owner!==UID||P.sid!==LIVE.sid||tDirty)return;
-  const now=Date.now();if(now-presLast<PRES_MS)return;presLast=now;
-  // 판 저장과 같은 모양으로 지금 저장된 내용을 그대로 다시 적음(바뀌는 것은 시각뿐)
-  bRef(LIVE.sid,myBid).update({name:MINE.name,picks:MINE.picks,w:MINE.w||{},done:!!MINE.done,updated:now}).catch(()=>{});
+  const now=Date.now();if(now-presLast<presMs())return;presLast=now;
+  // 판 짜기 중에는 판 저장과 같은 모양으로 저장된 내용을 그대로 다시 적고(바뀌는 것은 시각뿐), 빙고 진행 중에는 시각만 적음
+  bRef(LIVE.sid,myBid).update(LIVE.phase==="pick"?{name:MINE.name,picks:MINE.picks,w:MINE.w||{},done:!!MINE.done,updated:now}:{updated:now}).catch(()=>{});
 }
 /* 교수 PC를 다시 열었을 때 ‘이어서 진행’을 고르기 전까지는 연결 신호를 보내지 않고 진행(호출 처리·자동 시작)도 하지 않습니다. */
 let RESUME_HOLD="";
@@ -3512,8 +3525,8 @@ function hostInterrupted(){hbPend=0;hbTickAt=Date.now();
   RESUME_HOLD=CODE;openResumeChoice("gap")}
 /* 스마트폰: 강의가 중단된 상태(교수 화면 신호가 끊겼거나, 교수님이 아직 ‘이어서 진행’을 고르지 않음) */
 function teamHalted(){return ROLE==="team"&&!!CODE&&!!LIVE&&liveActive()&&hbDown}
-/* 스마트폰: 강의가 중단되었거나 종료된 상태(메뉴 잠금) */
-function teamLocked(){return teamHalted()||(ROLE==="team"&&!!CODE&&!!LIVE&&LIVE.phase==="done")}
+/* 스마트폰: 강의가 중단되었거나 종료된 상태(메뉴 잠금). 종료 잠금은 종료 뒤 12시간 동안만 */
+function teamLocked(){return teamHalted()||(ROLE==="team"&&!!CODE&&!!LIVE&&LIVE.phase==="done"&&(!LIVE.ended||Date.now()-LIVE.ended<DONE_LOCK_MS))}
 /* 스마트폰: 중단·종료된 동안에는 상황파악·위험예지·만다라트 메뉴를 막고 ‘우리 조 빙고’ 화면에 고정 */
 function applyHalt(){const h=teamLocked();
   document.querySelectorAll(".tab").forEach(b=>{const off=h&&b.dataset.t!=="team";b.disabled=off;b.setAttribute("aria-disabled",off?"true":"false")});
@@ -3552,7 +3565,7 @@ window.addEventListener("pageshow",e=>{if(e.persisted)hostBeat(true)});
 setInterval(()=>{hostBeat(false);hbTickAt=Date.now();
   hbCheck();presPing();
   // 교수 PC: 조별 접속 표시가 바뀌면(접속 확인 중 → 접속 끊김 등) 참가 현황을 다시 그림
-  if(ROLE==="host"&&ADMIN&&LIVE&&liveActive()&&LIVE.phase==="pick"&&LIVE.mode==="team"&&S.cfg.fill==="phone"&&LIST.map(presState).join(",")!==presSig)renderLiveHost();
+  if(ROLE==="host"&&ADMIN&&LIVE&&liveActive()&&S.cfg.fill==="phone"){const sg=LIST.map(presState).join(",");if(sg!==presSig){presSig=sg;renderBingo()}}
 },Math.min(5000,HB_MS));
 /* 이 PC가 진행하던 강의를 마감(이어서 진행할 수 있도록 단계는 기억) */
 async function closeCurrentLecture(){
@@ -3596,7 +3609,8 @@ function subscribeBase(){
         if(hbFresh(now)||(hbVerifyT&&now-hbVerifyT>=HB_MS/2))hbVerify=false;
         else{if(!hbVerifyT)hbVerifyT=now;return}
       }else if(at&&hbPrev&&now-hbPrev>=HB_MS/2&&now-hbPrev<HB_MS*2.5)hbSkew=Math.min(hbSkew,now-at);   // 신호가 제 간격으로 이어질 때만 시계 차이를 잼
-      hbPrev=now;hbSeen=now;presLast=0;
+      hbPrev=now;hbSeen=now;
+      if(hbDown||wasV)presLast=0;   // 중단·확인 중에서 풀리면 접속 신호를 바로 보냄
       if(hbDown){hbDown=false;if(renderTeam.hb===true)toast("교수님 화면이 다시 연결되었습니다. 이어서 진행합니다.");renderTeam()}
       else if(wasV)renderTeam();
     },()=>{hbKnown=true;renderTeam()})}
@@ -3718,9 +3732,9 @@ function renderLiveHost(){
   const qrBox=`<div class="qrrow"><button class="qr" id="lvQr" aria-label="QR 코드 크게 보기">${qr}</button><div style="display:grid;gap:6px;min-width:0"><b>QR 코드를 찍어 참가하세요</b><span class="hint">${L.mode==="team"?"조마다 스마트폰 1대로 참가해 조 번호를 고릅니다.":"각자 스마트폰으로 참가해 이름을 입력합니다."}</span><div class="row"><button class="btn" id="lvQrBig">QR 크게 보기</button></div></div></div>`;
   if(L.phase==="pick"){
     presSig=LIST.map(presState).join(",");
-    /* 조별전: 조를 차지한 기기가 지금 실제로 접속해 있는지 함께 표시(접속 확인 중 → 접속 중 / 접속 끊김) */
+    /* 참가한 기기가 지금 실제로 접속해 있는지 함께 표시(접속 확인 중 → 접속 중 / 접속 끊김) */
     const conn=b=>{const st=presState(b);return st==="chk"?" · 접속 확인 중":st==="off"?" · 접속 끊김":""};
-    const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?"입력 완료":b.kind==="team"&&!b.owned?"기기 연결 전":presState(b)==="off"?`${b.count}/${N}칸`:`${b.count}/${N}칸 입력 중`}${conn(b)}</span>${b.kind==="team"&&b.owned?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-release="${b.bid}">기기 해제</button>`:""}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
+    const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?"입력 완료":!b.owned?(b.kind==="team"?"기기 연결 전":`${b.count}/${N}칸`):presState(b)==="off"?`${b.count}/${N}칸`:`${b.count}/${N}칸 입력 중`}${conn(b)}</span>${b.kind==="team"&&b.owned?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-release="${b.bid}">기기 해제</button>`:""}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
     P_.innerHTML=head+qrBox+`<div class="tbar"><b>참가 현황 · 입력 완료 ${done}/${LIST.length}${L.mode==="team"?`(전체 ${L.teams}개 조)`:"명"}</b>${L.mode==="solo"?`<button class="btn primary" id="lvPlay" ${done?"":"disabled"}>입력 완료한 ${done}명으로 빙고 시작</button>`:`<span class="hint">모든 조가 입력을 마치면 자동으로 시작합니다.</span>`}</div>
       <div class="tiles">${tiles}</div>
       <p class="hint" style="margin:0">판 짜는 동안에는 다른 조가 볼 수 없도록 판 내용은 가리고 진행 상황만 보여 줍니다. 빙고가 시작되면 모든 판이 공개됩니다.</p>
@@ -3946,7 +3960,7 @@ function syncTB(){if(!tDirty)TB=MINE?clone(MINE):null}
 function tSave(now){if(!TB)return;tDirty=true;clearTimeout(tTimer);
   const run=async()=>{const body={sid:LIVE.sid,bid:myBid,name:TB.name,picks:TB.picks,w:TB.w||{},done:!!TB.done};
     try{const r=await rpc("apiSave",body);if(r&&r.err)toast(r.err);
-      else{const row=LIST.find(x=>x.bid===body.bid);if(row){row.done=body.done&&body.picks.every(Boolean);row.count=body.picks.filter(Boolean).length}}}catch(e){netErr()}
+      else{presLast=Date.now();const row=LIST.find(x=>x.bid===body.bid);if(row){row.done=body.done&&body.picks.every(Boolean);row.count=body.picks.filter(Boolean).length}}}catch(e){netErr()}
     tDirty=false};
   if(now)run();else tTimer=setTimeout(run,500)}
 function tBoardObj(){if(TB&&!TB.w)TB.w={};return TB}
