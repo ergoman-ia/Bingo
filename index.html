@@ -210,7 +210,7 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .addrow{display:flex;gap:8px}
 .addrow input{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--ground)}
 .grp{display:grid;gap:6px}
-.grp-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}   /* 스마트폰 판 짜기 목록의 ‘세부요인: 이름’ 줄 */
+.grp-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}   /* 판 짜기 목록의 ‘세부요인: 이름’ 줄 */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1.5px solid var(--line);border-radius:99px;padding:4px 11px;background:var(--surface);font-size:.86rem;cursor:pointer;text-align:left;line-height:1.35}
 .chip:hover{border-color:var(--olive)}
@@ -2938,7 +2938,7 @@ caseSel.onchange=()=>{if(hasPicks()&&!confirm("사례를 바꾸면 지금 짠 �
   if(ROLE!=="team"&&liveActive()&&!liveSame()){if(liveMine())openLiveChoice();else toast(`열린 강의(사례 ${LIVE.ci+1})는 그대로 진행됩니다. 이 사례로 하려면 강의를 새로 개설하세요.`)}};
 
 /* 탭 */
-function go(t){if(t!=="team"&&teamHalted()){t="team";toast("강의가 중단되어 지금은 다른 메뉴를 열 수 없습니다.")}S.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===t));
+function go(t){if(t!=="team"&&teamLocked()){t="team";toast(teamHalted()?"강의가 중단되어 지금은 다른 메뉴를 열 수 없습니다.":"강의가 종료되어 다른 메뉴를 열 수 없습니다.")}S.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===t));
   ["w5","kyt","mand","bingo","team"].forEach(k=>$("#p-"+k).hidden=k!==t);window.scrollTo({top:0,behavior:"smooth"})}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>go(b.dataset.t));
 const hasPicks=()=>!!(G&&!G.live&&G.boards.some(b=>b.picks.some(Boolean)));
@@ -2996,7 +2996,7 @@ function renderMand(){
   const s=th.subGoals[S.sub], dc=Array(9);
   dc[4]=`<div class="cell subc" style="background:${colorVar(S.sub)}">${esc(s.name)}</div>`;
   s.details.forEach((d,j)=>{dc[POS[j]]=`<div class="cell ed" ${ed} data-path="d${S.sub}-${j}">${esc(d)}</div>`});
-  $("#mDetail").innerHTML=`<div><span class="eyebrow">세부요인 ${S.sub+1} 펼치기</span><h3 style="font-size:1.15rem;margin-top:2px">${esc(s.name)}</h3></div><div class="mgrid">${dc.join("")}</div><p class="hint" style="margin:0">만다라트의 8칸 중 하나를 누르면 그 세부요인의 구체적 위험요인이 여기에 펼쳐집니다.</p>`;
+  $("#mDetail").innerHTML=`<div><span class="eyebrow">세부요인 펼치기</span><h3 style="font-size:1.15rem;margin-top:2px">${esc(s.name)}</h3></div><div class="mgrid">${dc.join("")}</div><p class="hint" style="margin:0">만다라트의 8칸 중 하나를 누르면 그 세부요인의 구체적 위험요인이 여기에 펼쳐집니다.</p>`;
   // 9x9
   const F=Array(81).fill("");
   const put=(r,c,html)=>{F[r*9+c]=html};
@@ -3174,7 +3174,7 @@ function renderPicker(){
   const picked=new Set(b.picks.filter(Boolean)),full=k===N;
   const chip=(t,cls,st)=>`<button class="chip${cls}" data-t="${esc(t)}" aria-pressed="${picked.has(t)}" ${!picked.has(t)&&full?"disabled":""} ${st||""}>${esc(t)}</button>`;
   $("#pSrc").innerHTML=
-    groups().map(g=>`<div class="grp">${g.k>=0?`<span class="eyebrow" style="color:var(--ink2)">세부요인 ${g.k+1}</span>`:`<span class="eyebrow" style="color:var(--ink2)">${esc(g.name)}</span>`}<div class="chips">${g.k>=0?`<span class="grp-head" style="background:${colorVar(g.k)}">${esc(g.name)}</span>`:""}${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");
+    groups().map(g=>`<div class="grp">${g.k>=0?`<div class="grp-title"><span class="eyebrow" style="color:var(--ink2)">세부요인:</span><span class="grp-head" style="background:${colorVar(g.k)}">${esc(g.name)}</span></div>`:`<span class="eyebrow" style="color:var(--ink2)">${esc(g.name)}</span>`}<div class="chips">${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");
   const left=G.boards.map(x=>({x,r:N-x.picks.filter(Boolean).length})).filter(o=>o.r>0);
   $("#pState").innerHTML=stateMsg?`<b>${esc(stateMsg)}</b>`:left.length?`아직 채울 칸: ${left.map(o=>`<b>${esc(o.x.name)}</b> ${o.r}칸`).join(" · ")}`:`<b>모든 판이 준비되었습니다.</b> 빙고를 시작하세요.`;
   $("#pStart").disabled=left.length>0;
@@ -3465,8 +3465,8 @@ function scheduleRoster(){
 function resubBoards(){
   const sid=LIVE&&LIVE.sid?LIVE.sid:null;
   if(ADMIN&&sid){
-    if(boardsSid!==sid){if(unsubB)unsubB();boardsSid=sid;BOARDS=[];
-      unsubB=fdb.collection(`lectures/${CODE}/sessions/${sid}/boards`).onSnapshot(q=>{BOARDS=q.docs.map(d=>d.data()).sort(byOrder);LIST=rosterOf(curBoards());onLive();hostTick();scheduleRoster()},fsErr)}
+    if(boardsSid!==sid){if(unsubB)unsubB();boardsSid=sid;BOARDS=[];PRES={};presStart=Date.now();
+      unsubB=fdb.collection(`lectures/${CODE}/sessions/${sid}/boards`).onSnapshot(q=>{BOARDS=q.docs.map(d=>d.data()).sort(byOrder);presTrack();LIST=rosterOf(curBoards());onLive();hostTick();scheduleRoster()},fsErr)}
   }else if(unsubB){unsubB();unsubB=null;boardsSid=null;BOARDS=[]}
   const key=ROLE==="team"&&sid&&P.sid===sid&&P.bid?`${sid}/${P.bid}`:"";
   if(key!==mineKey){if(unsubMine)unsubMine();unsubMine=null;mineKey=key;MINE=null;
@@ -3475,18 +3475,47 @@ function resubBoards(){
 }
 /* ── 교수 화면 연결 신호(하트비트) ──
    교수 PC가 강의를 진행하는 동안 30초마다 신호를 남깁니다. 교수 PC가 꺼지거나 창이 닫혀
-   2분 동안 신호가 없으면 스마트폰은 ‘강의가 중단(마감)되었습니다’를 띄우고 입력을 막습니다.
+   2분 동안 신호가 없으면 스마트폰은 ‘강의가 중단되었습니다’를 띄우고 입력을 막습니다.
    교수 PC가 다시 열리면(또는 다른 PC에서 이어서 진행하면) 자동으로 이어집니다. */
 const HB_MS=window.KYT_HB_MS||30000,HB_DEAD=window.KYT_HB_DEAD||120000,ALIVE_MS=window.KYT_ALIVE_MS||240000,ALIVE_DEAD=window.KYT_ALIVE_DEAD||720000;
 let unsubHB=null,hbSeen=0,hbDown=false,hbLastWrite=0,hbKnown=true,hbHideDown=false;
+/* 스마트폰: 화면을 오래 껐다 켠 뒤에는 교수 화면이 살아 있는지 다시 확인될 때까지 입력을 막습니다(hbVerify).
+   hbAt=마지막으로 받은 신호에 적힌 시각(교수 PC 시계), hbSkew=두 기기 시계 차이의 추정값 */
+let hbAt=0,hbVerify=false,hbWake=0,hbVerifyT=0,hbHideAt=0,hbSkew=Infinity,hbPrev=0;
+const hbSk=()=>isFinite(hbSkew)?hbSkew:0;
+const hbFresh=now=>!!hbAt&&now-hbAt-hbSk()<HB_DEAD;
+/* 교수 PC: 신호를 보내지 못한 채 2분이 넘으면(절전에서 깨어남, 인터넷 끊김) 스마트폰은 이미 중단 상태이므로
+   자동으로 이어 가지 않고 ‘이어서 진행’을 다시 고르게 합니다. hbTickAt=마지막 타이머 시각, hbPend=아직 서버에 닿지 않은 가장 오래된 신호 시각 */
+let hbTickAt=0,hbPend=0;
+/* 조별전 판 짜기: 스마트폰이 실제로 접속해 있는지 표시(스마트폰이 20초마다 자기 판에 신호를 남기고, 교수 PC는 50초 동안 신호가 없으면 ‘접속 끊김’으로 봄) */
+const PRES_MS=window.KYT_PRES_MS||20000,PRES_DEAD=window.KYT_PRES_DEAD||50000;
+let PRES={},presStart=0,presLast=0,presSig="";
+function presTrack(){const now=Date.now();BOARDS.forEach(b=>{if(b.kind!=="team")return;const q=PRES[b.bid],v=b.updated||0,o=b.owner||"";
+  if(!q){PRES[b.bid]={v,o,at:0};return}   // 처음 본 값은 예전 기록일 수 있어 ‘접속’으로 치지 않음
+  if(v!==q.v||(o&&o!==q.o))q.at=now;if(!o)q.at=0;q.v=v;q.o=o})}
+function presState(b){if(!(b.kind==="team"&&b.owned))return "";const q=PRES[b.bid],now=Date.now();
+  if(q&&q.at&&now-q.at<PRES_DEAD)return "on";return now-presStart<PRES_DEAD?"chk":"off"}
+function presPing(){
+  if(ROLE!=="team"||!fdb||!CODE||!LIVE||!liveActive()||LIVE.mode!=="team"||LIVE.phase!=="pick"||hbDown||hbVerify||!hbKnown||document.hidden)return;
+  if(!MINE||!myBid||MINE.owner!==UID||P.sid!==LIVE.sid||tDirty)return;
+  const now=Date.now();if(now-presLast<PRES_MS)return;presLast=now;
+  // 판 저장과 같은 모양으로 지금 저장된 내용을 그대로 다시 적음(바뀌는 것은 시각뿐)
+  bRef(LIVE.sid,myBid).update({name:MINE.name,picks:MINE.picks,w:MINE.w||{},done:!!MINE.done,updated:now}).catch(()=>{});
+}
 /* 교수 PC를 다시 열었을 때 ‘이어서 진행’을 고르기 전까지는 연결 신호를 보내지 않고 진행(호출 처리·자동 시작)도 하지 않습니다. */
 let RESUME_HOLD="";
 const resumeHeld=()=>!!RESUME_HOLD&&RESUME_HOLD===CODE;
-function releaseHold(beat){const h=resumeHeld();RESUME_HOLD="";if(h&&beat)hostBeat(true)}
+function releaseHold(beat){const h=resumeHeld();RESUME_HOLD="";hbPend=0;hbTickAt=Date.now();if(h&&beat){presStart=Date.now();hostBeat(true)}}
+/* 교수 PC: 강의 도중 연결이 2분 넘게 끊겼다가 돌아온 경우 → 확인 창을 띄우고, 고를 때까지 신호·진행을 보류 */
+function hostInterrupted(){hbPend=0;hbTickAt=Date.now();
+  if(resumeHeld()||!liveActive()||!liveMine())return;
+  RESUME_HOLD=CODE;openResumeChoice("gap")}
 /* 스마트폰: 강의가 중단된 상태(교수 화면 신호가 끊겼거나, 교수님이 아직 ‘이어서 진행’을 고르지 않음) */
 function teamHalted(){return ROLE==="team"&&!!CODE&&!!LIVE&&liveActive()&&hbDown}
-/* 스마트폰: 중단된 동안에는 상황파악·위험예지·만다라트 메뉴를 막고 ‘우리 조 빙고’ 화면에 고정 */
-function applyHalt(){const h=teamHalted();
+/* 스마트폰: 강의가 중단되었거나 종료된 상태(메뉴 잠금) */
+function teamLocked(){return teamHalted()||(ROLE==="team"&&!!CODE&&!!LIVE&&LIVE.phase==="done")}
+/* 스마트폰: 중단·종료된 동안에는 상황파악·위험예지·만다라트 메뉴를 막고 ‘우리 조 빙고’ 화면에 고정 */
+function applyHalt(){const h=teamLocked();
   document.querySelectorAll(".tab").forEach(b=>{const off=h&&b.dataset.t!=="team";b.disabled=off;b.setAttribute("aria-disabled",off?"true":"false")});
   if(h&&S.tab!=="team")go("team")}
 const hbRef=()=>fdb.doc(`lectures/${CODE}/meta/hb`);
@@ -3494,22 +3523,36 @@ function hostBeat(force){
   if(!fdb||!ADMIN||ROLE!=="host"||!CODE||!LIVE||!liveActive())return;
   if(LIVE.hostUid!==UID&&!(HOSTINFO.claimed&&HOSTINFO.code===CODE))return;
   if(resumeHeld())return;   // ‘이어서 진행’을 고르기 전에는 신호를 보내지 않음(스마트폰은 계속 중단 상태)
-  const now=Date.now();if(!force&&now-hbLastWrite<HB_MS-500)return;
-  hbLastWrite=now;hbRef().set({at:now,sid:LIVE.sid}).catch(()=>{hbLastWrite=0});
+  const now=Date.now();
+  if((hbTickAt&&now-hbTickAt>HB_DEAD)||(hbPend&&now-hbPend>HB_DEAD)){hostInterrupted();return}   // 2분 넘게 끊겼다가 돌아옴 → 자동으로 이어 가지 않음
+  if(!force&&now-hbLastWrite<HB_MS-500)return;
+  hbLastWrite=now;if(!hbPend)hbPend=now;
+  hbRef().set({at:now,sid:LIVE.sid}).then(()=>{hbPend=0}).catch(()=>{hbLastWrite=0});
   // 스마트폰 강의 목록에서 ‘지금 진행 중’인지 가릴 수 있도록 강의 문서에도 가끔(4분마다) 표시
   if(now-(LIVE.alive||0)>ALIVE_MS){LIVE.alive=now;sRef().update({alive:now}).catch(()=>{})}
 }
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden){hbHideDown=hbDown;return}
-  // 화면을 다시 켰을 때의 여유 시간은 ‘화면을 끄기 전에 중단 상태가 아니었을 때’만 줍니다(중단된 강의가 화면을 켰다고 풀리지 않도록).
-  if(!hbHideDown)hbSeen=Math.max(hbSeen,Date.now()-HB_DEAD/2);
+  if(document.hidden){hbHideDown=hbDown;hbHideAt=Date.now();return}
+  if(ROLE==="team"){presLast=0;const now=Date.now();
+    // 화면을 30초 넘게 껐다 켰고, 마지막으로 받은 신호가 2분 안의 것이 아니면: 새 신호로 확인될 때까지 ‘확인 중’(입력 불가)
+    if(!hbHideDown&&!hbVerify&&hbKnown&&hbHideAt&&now-hbHideAt>=HB_MS&&CODE&&LIVE&&liveActive()&&!hbFresh(now)){hbVerify=true;hbWake=now;hbVerifyT=0;hbDown=false;renderTeam()}
+    else hbCheck();
+    return}
   hostBeat(true)});
+/* 스마트폰: 교수 화면 신호가 끊겼는지 확인 */
+function hbCheck(){
+  if(!(ROLE==="team"&&CODE&&LIVE&&liveActive()))return;
+  const now=Date.now();
+  if(hbVerify){if(now-hbWake>HB_MS*1.5+Math.min(5000,HB_MS)){hbVerify=false;hbSeen=0;hbDown=true;renderTeam()}return}   // 확인 시간(약 50초) 안에 새 신호가 없으면 중단
+  const down=now-hbSeen>HB_DEAD;if(down!==hbDown){hbDown=down;renderTeam()}
+}
 /* 교수 PC 창을 닫거나 새로 고칠 때: 스마트폰이 바로 중단 상태가 되도록 표시를 남겨 봅니다(브라우저가 닫히는 중이라 전송되지 않을 수 있으며, 그때는 2분 뒤 신호 끊김으로 중단됩니다). */
 window.addEventListener("pagehide",()=>{try{if(fdb&&ADMIN&&ROLE==="host"&&CODE&&LIVE&&liveActive()&&(LIVE.hostUid===UID||(HOSTINFO.claimed&&HOSTINFO.code===CODE)))hbRef().set({at:Date.now(),sid:LIVE.sid,hold:true}).catch(()=>{})}catch(e){}});
 window.addEventListener("pageshow",e=>{if(e.persisted)hostBeat(true)});
-setInterval(()=>{hostBeat(false);
-  // 스마트폰: 교수 화면 신호가 끊겼는지 확인
-  if(ROLE==="team"&&CODE&&LIVE&&liveActive()){const down=Date.now()-hbSeen>HB_DEAD;if(down!==hbDown){hbDown=down;renderTeam()}}
+setInterval(()=>{hostBeat(false);hbTickAt=Date.now();
+  hbCheck();presPing();
+  // 교수 PC: 조별 접속 표시가 바뀌면(접속 확인 중 → 접속 끊김 등) 참가 현황을 다시 그림
+  if(ROLE==="host"&&ADMIN&&LIVE&&liveActive()&&LIVE.phase==="pick"&&LIVE.mode==="team"&&S.cfg.fill==="phone"&&LIST.map(presState).join(",")!==presSig)renderLiveHost();
 },Math.min(5000,HB_MS));
 /* 이 PC가 진행하던 강의를 마감(이어서 진행할 수 있도록 단계는 기억) */
 async function closeCurrentLecture(){
@@ -3526,7 +3569,7 @@ async function closeStaleMine(){
       await fdb.doc(`lectures/${x.code}`).update(u).catch(()=>{})}}catch(e){}
 }
 function subscribeBase(){
-  if(unsubHB){unsubHB();unsubHB=null}hbSeen=Date.now();hbDown=false;hbHideDown=false;hbKnown=!(ROLE==="team"&&CODE);
+  if(unsubHB){unsubHB();unsubHB=null}hbSeen=Date.now();hbDown=false;hbHideDown=false;hbKnown=!(ROLE==="team"&&CODE);hbAt=0;hbVerify=false;hbSkew=Infinity;hbPrev=0;hbPend=0;
   if(unsubS){unsubS();unsubS=null}if(unsubR){unsubR();unsubR=null}
   LIVE=null;LIST=[];BOARDS=[];ROSTER=null;if(unsubB){unsubB();unsubB=null;boardsSid=null}
   if(!CODE){onLive();return}
@@ -3542,13 +3585,20 @@ function subscribeBase(){
      - 처음 받은 값: 2분 안에 남긴 신호일 때만 ‘살아 있음’으로 봅니다(중단된 강의에 새로 들어온 스마트폰이 입력하지 못하도록).
        그보다 오래된 신호면 중단으로 두고, 신호가 새로 바뀔 때(최대 30초) 풀립니다. */
   if(ROLE==="team"){let first=true;unsubHB=hbRef().onSnapshot(s=>{
-      const d=s.exists?s.data():null,was1=first;first=false;hbKnown=true;
-      if(d&&d.hold){hbSeen=0;hbDown=true;renderTeam();return}
+      const d=s.exists?s.data():null,was1=first,now=Date.now(),at=+(d&&d.at)||0;first=false;hbKnown=true;hbAt=at;
+      if(d&&d.hold){hbVerify=false;hbSeen=0;hbDown=true;renderTeam();return}
       if(was1){
-        if(d){const at=+d.at||0;if(Date.now()-at<HB_DEAD)hbSeen=Math.min(Date.now(),at);else{hbSeen=0;hbDown=true}}
+        if(d){if(now-at<HB_DEAD)hbSeen=Math.min(now,at);else{hbSeen=0;hbDown=true}}
         renderTeam();return}
-      hbSeen=Date.now();
+      const wasV=hbVerify;
+      if(hbVerify){
+        /* 화면을 켠 뒤 확인 중: 방금 받은 신호가 2분 안의 것이면 바로 풀고, 아니면(밀려 있던 예전 신호일 수 있음) 신호를 한 번 더 받았을 때 풉니다. */
+        if(hbFresh(now)||(hbVerifyT&&now-hbVerifyT>=HB_MS/2))hbVerify=false;
+        else{if(!hbVerifyT)hbVerifyT=now;return}
+      }else if(at&&hbPrev&&now-hbPrev>=HB_MS/2&&now-hbPrev<HB_MS*2.5)hbSkew=Math.min(hbSkew,now-at);   // 신호가 제 간격으로 이어질 때만 시계 차이를 잼
+      hbPrev=now;hbSeen=now;presLast=0;
       if(hbDown){hbDown=false;if(renderTeam.hb===true)toast("교수님 화면이 다시 연결되었습니다. 이어서 진행합니다.");renderTeam()}
+      else if(wasV)renderTeam();
     },()=>{hbKnown=true;renderTeam()})}
 }
 let LIVE_LOADED=false,ROSTER=null;
@@ -3558,7 +3608,8 @@ function setCode(c){CODE=c||"";LIVE_LOADED=false;ctxSid=null;tCaseSid="";subscri
 const liveNow=x=>!!(x&&x.open&&x.phase!=="done"&&Date.now()-(x.alive||0)<ALIVE_DEAD);
 
 function rpc(fn,...args){
-  if(fn!=="apiAdmin"&&teamHalted())return Promise.resolve({err:"강의가 중단되어 지금은 입력할 수 없습니다."});   // 스마트폰: 중단 중에는 참가·판 저장·호출을 보내지 않음
+  if(fn!=="apiAdmin"&&teamHalted())return Promise.resolve({err:"강의가 중단되어 지금은 입력할 수 없습니다."});
+  if(fn!=="apiAdmin"&&ROLE==="team"&&hbVerify&&liveActive())return Promise.resolve({err:"교수님 화면과 연결을 확인하는 중입니다. 잠시 뒤 다시 해 주세요."});   // 스마트폰: 중단 중에는 참가·판 저장·호출을 보내지 않음
   return API[fn](...args)}
 const liveActive=()=>!!(LIVE&&LIVE.sid&&(LIVE.phase==="pick"||LIVE.phase==="play"));
 const gci=()=>G&&G.live&&LIVE?LIVE.ci:S.ci;
@@ -3666,7 +3717,10 @@ function renderLiveHost(){
     <div class="row"><span class="hint">설정을 바꾸려면 ‘강의 끝내기’ 뒤 새로 여세요.</span><button class="btn" id="lvRestart" ${lecDone(L)?'disabled title="빙고가 난 강의는 다시 시작할 수 없습니다. 강의를 끝내고 새 강의를 개설하세요."':""}>이 강의에서 다시 시작</button><button class="btn" id="lvNew">새 강의 개설</button><button class="btn ghost" id="lvEnd">강의 끝내기</button></div></div>`;
   const qrBox=`<div class="qrrow"><button class="qr" id="lvQr" aria-label="QR 코드 크게 보기">${qr}</button><div style="display:grid;gap:6px;min-width:0"><b>QR 코드를 찍어 참가하세요</b><span class="hint">${L.mode==="team"?"조마다 스마트폰 1대로 참가해 조 번호를 고릅니다.":"각자 스마트폰으로 참가해 이름을 입력합니다."}</span><div class="row"><button class="btn" id="lvQrBig">QR 크게 보기</button></div></div></div>`;
   if(L.phase==="pick"){
-    const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?"입력 완료":b.kind==="team"&&!b.owned?"기기 연결 전":`${b.count}/${N}칸 입력 중`}</span>${b.kind==="team"&&b.owned?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-release="${b.bid}">기기 해제</button>`:""}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
+    presSig=LIST.map(presState).join(",");
+    /* 조별전: 조를 차지한 기기가 지금 실제로 접속해 있는지 함께 표시(접속 확인 중 → 접속 중 / 접속 끊김) */
+    const conn=b=>{const st=presState(b);return st==="chk"?" · 접속 확인 중":st==="off"?" · 접속 끊김":""};
+    const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?"입력 완료":b.kind==="team"&&!b.owned?"기기 연결 전":presState(b)==="off"?`${b.count}/${N}칸`:`${b.count}/${N}칸 입력 중`}${conn(b)}</span>${b.kind==="team"&&b.owned?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-release="${b.bid}">기기 해제</button>`:""}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
     P_.innerHTML=head+qrBox+`<div class="tbar"><b>참가 현황 · 입력 완료 ${done}/${LIST.length}${L.mode==="team"?`(전체 ${L.teams}개 조)`:"명"}</b>${L.mode==="solo"?`<button class="btn primary" id="lvPlay" ${done?"":"disabled"}>입력 완료한 ${done}명으로 빙고 시작</button>`:`<span class="hint">모든 조가 입력을 마치면 자동으로 시작합니다.</span>`}</div>
       <div class="tiles">${tiles}</div>
       <p class="hint" style="margin:0">판 짜는 동안에는 다른 조가 볼 수 없도록 판 내용은 가리고 진행 상황만 보여 줍니다. 빙고가 시작되면 모든 판이 공개됩니다.</p>
@@ -3907,12 +3961,12 @@ function renderTeam(){
     $("#tWait").innerHTML=`<b>교수님 화면의 QR 코드를 찍어 참가하세요.</b><span class="hint">빙고 훈련은 QR 코드로만 참가할 수 있습니다.</span>`;return}
   if(!LIVE_LOADED){reset();show("tWait");$("#tWait").innerHTML="<b>강의 정보를 불러오는 중입니다…</b>";return}
   if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의를 찾을 수 없습니다.</b><span class="hint">교수님 화면의 QR 코드를 다시 찍어 주세요.</span>`;return}
-  // 교수 화면과의 연결 상태를 아직 확인하지 못했으면(접속 직후 잠깐) 참가·입력 화면을 열지 않음
-  if(liveActive()&&!hbKnown){reset();show("tWait");$("#tClosed").hidden=true;$("#tWait").innerHTML="<b>교수님 화면과 연결을 확인하는 중입니다…</b>";return}
+  // 교수 화면과의 연결 상태를 아직 확인하지 못했으면(접속 직후, 화면을 오래 껐다 켠 직후) 참가·입력 화면을 열지 않음
+  if(liveActive()&&(!hbKnown||hbVerify)){reset();show("tWait");$("#tClosed").hidden=true;if(hbVerify){clearTimeout(tTimer);tDirty=false;tPending=-1}$("#tWait").innerHTML="<b>교수님 화면과 연결을 확인하는 중입니다…</b>";return}
   // 강의가 중단되면 모든 메뉴(상황파악·위험예지·만다라트)와 입력을 막고, 교수님이 ‘이어서 진행’을 고를 때까지 이 안내만 보여 줌
   if(liveActive()&&hbDown){reset();show("tWait");clearTimeout(tTimer);tDirty=false;tPending=-1;
     const cl=$("#tClosed");cl.hidden=false;cl.innerHTML=`<b>강의가 중단되었습니다.</b> 교수님이 ‘이어서 진행’을 선택할 때까지 모든 메뉴와 입력을 쓸 수 없습니다.`;
-    $("#tWait").innerHTML=`<b>강의가 중단(마감)되었습니다.</b><span class="hint">교수님 화면과 연결이 끊겼습니다. 교수님이 강의를 다시 열어 ‘이어서 진행’을 선택하면 하던 판에서 자동으로 이어집니다. 이 화면을 닫지 말고 기다려 주세요.</span>`;
+    $("#tWait").innerHTML=`<b>강의가 중단되었습니다.</b><span class="hint">교수님 화면과 연결이 끊겼습니다. 교수님이 강의를 다시 열어 ‘이어서 진행’을 선택하면 하던 판에서 자동으로 이어집니다. 이 화면을 닫지 말고 기다려 주세요.</span>`;
     if(renderTeam.hb!==true)toast("교수님 화면과 연결이 끊겨 강의가 중단되었습니다.");renderTeam.hb=true;return}
   renderTeam.hb=false;
   {const cl=$("#tClosed"),was=renderTeam.phase;renderTeam.phase=L.phase;
@@ -3942,7 +3996,7 @@ function renderTeam(){
 async function doJoin(q){
   try{const r=await rpc("apiJoin",{sid:LIVE.sid,pid:P.pid,...q});
     if(r.err){toast(r.err);return}
-    myBid=r.bid;P.bid=r.bid;P.sid=LIVE.sid;if(q.name)P.name=q.name;saveP();MINE=null;TB=null;resubBoards();renderTeam();
+    myBid=r.bid;P.bid=r.bid;P.sid=LIVE.sid;presLast=0;if(q.name)P.name=q.name;saveP();MINE=null;TB=null;resubBoards();renderTeam();
   }catch(e){netErr()}
 }
 $("#tJoin").addEventListener("click",e=>{
@@ -4111,11 +4165,11 @@ function askLiveChoice(){
   if(diff&&!quiet)toast(`화면을 진행 중이던 강의 ‘${LIVE.title||"위험예지 빙고 훈련"}’(사례 ${LIVE.ci+1})에 맞췄습니다.`);
 }
 /* 앱을 새로 열었을 때 끝내지 않은 강의가 있으면 띄우는 창 */
-function openResumeChoice(){
+function openResumeChoice(why){
   const L=LIVE,calls=(L.calls||[]).length;LCMODE="resume";
   // 스마트폰이 바로 중단 상태가 되도록 표시(‘이어서 진행’을 고르면 다음 신호에서 지워짐)
   if(resumeHeld())hbRef().set({at:Date.now(),sid:L.sid,hold:true}).catch(()=>{});
-  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">진행 중이던 강의가 있습니다</span><h2 id="lcTitle">기존에 개설되어 진행되고 있던 강의가 다음과 같이 있습니다</h2></div></div>
+  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">${why==="gap"?"강의 화면의 연결이 2분 넘게 끊겼습니다":"진행 중이던 강의가 있습니다"}</span><h2 id="lcTitle">${why==="gap"?"연결이 끊긴 동안 참가자 스마트폰은 중단 상태가 되었습니다":"기존에 개설되어 진행되고 있던 강의가 다음과 같이 있습니다"}</h2></div></div>
     <div class="lc-info"><span>강의 이름</span><b>${esc(L.title||"위험예지 빙고 훈련")}</b><div class="case-label">${liveCaseLabel()}</div>
       <span>${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 목표 ${L.target}줄 · ${L.phase==="pick"?"판 짜는 중":`빙고 진행 중(호출 ${calls}번)`}</span>
       <span>개설 ${fmtDT(L.opened)} · 마지막 활동 ${fmtDT(L.alive)}</span></div>
@@ -4123,8 +4177,8 @@ function openResumeChoice(){
     <div class="row" style="justify-content:flex-end"><button class="btn" data-lc="fresh">마감하고 새로 시작</button><button class="btn primary" data-lc="resume">이어서 진행</button></div>`;
   $("#liveChoice").hidden=false;const r=$("#lcBody [data-lc=resume]");if(r)r.focus();
 }
-/* 바깥을 누르거나 Esc를 눌러 창을 닫을 때: 새로 연 앱의 확인 창이면 ‘이어서 진행’으로 봅니다(아무것도 지워지지 않도록). */
-function dismissLiveChoice(){if(LCMODE==="resume"){liveChoice("resume");return}closeLiveChoice()}
+/* 바깥을 누르거나 Esc를 눌러 창을 닫을 때: ‘이어서 진행’ 확인 창은 닫지 않습니다(둘 중 하나를 직접 골라야 스마트폰이 풀림). */
+function dismissLiveChoice(){if(LCMODE==="resume"){toast("‘이어서 진행’ 또는 ‘마감하고 새로 시작’을 골라 주세요.");return}closeLiveChoice()}
 function openLiveChoice(){
   if(!liveActive())return;
   const L=LIVE,now=caseLabel(S.ci,S.cfg.src==="mand"?caseM(S.ci).coreThemes[S.ti].name:"");
