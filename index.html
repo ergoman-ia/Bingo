@@ -90,6 +90,26 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .f .k i{font-style:normal;font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;color:var(--ink2)}
 .f .v{min-height:1.6em;border-radius:4px}
 
+/* 눌러서 가운데로 크게 보기(상황파악 5W1H 칸, 위험예지 4라운드 카드) */
+.w5 .f,.rd{cursor:zoom-in}
+.w5 .f:hover{background:var(--olive-soft)}
+.rd:hover{border-color:var(--olive)}
+.w5 .f:focus-visible,.rd:focus-visible{outline:3px solid var(--signal);outline-offset:-3px}
+.reveal.zoom{z-index:55}
+.rv-card.zm-card{width:min(1000px,100%);text-align:left;max-height:calc(100dvh - 32px);overflow:auto;gap:18px}
+.zm-body{display:grid;gap:14px}
+.zm-body .k{display:flex;gap:12px;align-items:baseline}
+.zm-body .k b{font-family:var(--display);font-weight:400;font-size:clamp(2rem,5vw,3.2rem);color:var(--signal-ink)}
+.zm-body .k i{font-style:normal;font-family:var(--mono);font-size:clamp(.9rem,1.8vw,1.2rem);letter-spacing:.1em;color:var(--ink2)}
+.zm-body .v{font-size:clamp(1.5rem,3.6vw,2.6rem);font-weight:700;line-height:1.45;word-break:keep-all}
+.zm-body header{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.zm-body .rn{font-family:var(--mono);font-weight:600;font-size:clamp(1rem,2vw,1.3rem);color:var(--olive);border:2px solid var(--olive);border-radius:6px;padding:2px 10px;white-space:nowrap}
+.zm-body h3{font-size:clamp(1.7rem,4vw,2.6rem)}
+.zm-body .q{font-size:clamp(1.05rem,2.2vw,1.4rem);color:var(--ink2)}
+.zm-body ul{margin:0;padding-left:1.1em;display:grid;gap:10px}
+.zm-body li,.zm-body .pt strong{font-size:clamp(1.2rem,2.7vw,1.8rem);line-height:1.5;word-break:keep-all}
+.zm-body .pt{gap:10px;padding:12px 0}
+
 /* 2. 4R */
 .rounds{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
 .rd{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:8px;align-content:start}
@@ -459,6 +479,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
       <span class="eyebrow">Step 4 · 빙고 훈련</span>
       <h1 id="bTitle">빙고 훈련</h1>
     </div>
+    <div id="bCase"></div>
     <div class="setup">
       <div class="opts">
         <div class="opt"><span>진행 방식</span><div class="seg" id="optMode"><button data-v="solo">개인전</button><button data-v="team">조별전</button></div></div>
@@ -475,7 +496,6 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
       </div>
     </div>
 
-    <div id="bCase"></div>
     <p class="lead" id="bLead" style="margin:0"></p>
     <div class="live" id="livePanel" hidden></div>
     <details class="live lechist" id="lecHist" hidden><summary>강의 기록 보기·삭제 <button class="btn lh-reload" id="lhReload" type="button">새로 고침</button></summary><div id="lecHistBody" style="display:grid;gap:10px;margin-top:10px"></div></details>
@@ -537,7 +557,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
       <div class="board" id="tBoard"></div>
     </div>
   </section>
-  <p class="hint appver" style="text-align:center;margin:24px 0 0;font-size:.75rem">앱 버전 2026-11-10</p>
+  <p class="hint appver" style="text-align:center;margin:24px 0 0;font-size:.75rem">앱 버전 2026-11-25</p>
 </main>
 
 <div class="reveal" id="reveal" hidden role="dialog" aria-modal="true" aria-labelledby="rvText">
@@ -548,6 +568,12 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <div class="rv-sub" id="rvSub"></div>
     <div class="rv-q">이 위험을 막을 대책을 말해 보세요.</div>
     <div class="row" style="justify-content:center"><button class="btn primary" id="rvClose">확인</button></div>
+  </div>
+</div>
+<div class="reveal zoom" id="zoom" hidden role="dialog" aria-modal="true" aria-label="크게 보기">
+  <div class="rv-card zm-card">
+    <div class="zm-body" id="zmBody"></div>
+    <div class="row" style="justify-content:center"><button class="btn primary" id="zmClose">닫기</button></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -2924,7 +2950,7 @@ function renderW5(){
   $("#w5Title").textContent=DATA.M[S.ci].title;
   const sitEl=$("#w5Sit");sitEl.textContent=w.sit||DATA.R[S.ci].sit;
   const im=$("#w5Img"),src=DATA.IMG&&DATA.IMG[S.ci];im.hidden=!src;if(src){im.src=src;im.alt=`${caseShort(S.ci)} 상황 그림`}
-  $("#w5Grid").innerHTML=W5K.map(([k,ko,en])=>`<div class="f"><div class="k"><b>${ko}</b><i>${en}</i></div><div class="v">${esc(w[k])}</div></div>`).join("");
+  $("#w5Grid").innerHTML=W5K.map(([k,ko,en])=>`<div class="f" tabindex="0" title="누르면 크게 봅니다"><div class="k"><b>${ko}</b><i>${en}</i></div><div class="v">${esc(w[k])}</div></div>`).join("");
 }
 
 /* 강의 진행 중(만다라트 방식)에는 강의에서 고른 핵심원인(LIVE.ti)만 보입니다. 아니면 -1(잠그지 않음).
@@ -2947,9 +2973,23 @@ function renderKYT(){
     if(i===1){body=r.steps[1].map((s,j)=>lk>=0&&lk!==j?"":`<div class="pt"><strong>${esc(s)}</strong>${m.coreThemes[j]&&(lk<0||lk===j)?`<div><button class="btn" data-theme="${j}">핵심원인 “${esc(m.coreThemes[j].name)}” 만다라트 →</button>${lk===j?` <span class="hint">이번 빙고의 핵심원인</span>`:""}</div>`:""}</div>`).join("")}
     else if(i===3){body=`<ul>${r.steps[3].map(s=>`<li class="chant">${esc(s)}</li>`).join("")}</ul>`}
     else body=`<ul>${r.steps[i].map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`;
-    return `<article class="rd${i===1?" key":""}"><header><span class="rn">${t[0]}</span><h3>${t[1]}</h3></header><div class="q">${t[2]}</div>${body}</article>`}).join("");
+    return `<article class="rd${i===1?" key":""}" tabindex="0" title="누르면 크게 봅니다"><header><span class="rn">${t[0]}</span><h3>${t[1]}</h3></header><div class="q">${t[2]}</div>${body}</article>`}).join("");
 }
 $("#rounds").addEventListener("click",e=>{const b=e.target.closest("[data-theme]");if(!b)return;const lk=lockedTi();S.ti=lk>=0?lk:+b.dataset.theme;S.sub=0;renderMand();go("mand")});
+
+/* 크게 보기: 상황파악의 5W1H 칸, 위험예지 4라운드 카드를 누르면 그 내용을 화면 가운데에 크게 보여 줌 */
+let zoomFrom=null;
+function openZoom(el){zoomFrom=el;$("#zmBody").innerHTML=el.innerHTML;$("#zoom").hidden=false;$("#zmClose").focus()}
+function closeZoom(){if($("#zoom").hidden)return;$("#zoom").hidden=true;if(zoomFrom&&zoomFrom.isConnected)zoomFrom.focus();zoomFrom=null}
+[["#w5Grid",".f"],["#rounds",".rd"]].forEach(([box,sel])=>{
+  $(box).addEventListener("click",e=>{if(e.target.closest("button"))return;const el=e.target.closest(sel);if(el)openZoom(el)});
+  $(box).addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches(sel)){e.preventDefault();openZoom(e.target)}});
+});
+$("#zmClose").onclick=closeZoom;
+$("#zoom").addEventListener("click",e=>{if(e.target.id==="zoom"){closeZoom();return}
+  const b=e.target.closest("[data-theme]");if(!b)return;   // 확대 창 안의 ‘만다라트 →’ 단추도 원래대로 동작
+  closeZoom();const lk=lockedTi();S.ti=lk>=0?lk:+b.dataset.theme;S.sub=0;renderMand();go("mand")});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeZoom()});
 
 /* 3. 만다라트 */
 const colorVar=k=>`var(--c${k%8})`;
