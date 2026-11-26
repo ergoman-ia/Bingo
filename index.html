@@ -216,6 +216,10 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .psrc{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:14px}
 .addrow{display:flex;gap:8px}
 .addrow input{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--ground)}
+/* 개인전 참가(이름 입력): 폭이 좁은 스마트폰에서도 ‘참가’ 버튼이 줄어들지 않고 크게 보이도록 버튼 폭을 먼저 잡고, 남는 폭만 입력 칸이 씀 */
+.addrow.joinrow{align-items:stretch}
+.addrow.joinrow input{flex:0 1 11em;width:0;min-width:0}   /* 이름 칸이 길어 버튼이 묻히지 않게 폭을 제한(이름은 20자까지) */
+.addrow.joinrow .btn{flex:1 0 96px;min-width:96px;min-height:44px;justify-content:center;white-space:nowrap;font-size:1.05rem}
 .grp{display:grid;gap:6px}
 .grp-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}   /* 판 짜기 목록의 ‘세부요인: 이름’ 줄 */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -421,7 +425,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <button class="tab" role="tab" id="tab-kyt" data-t="kyt" aria-selected="false"><span class="n">2</span>위험예지 4라운드</button>
     <button class="tab" role="tab" id="tab-mand" data-t="mand" aria-selected="false"><span class="n">3</span>만다라트</button>
     <button class="tab" role="tab" id="tab-bingo" data-t="bingo" aria-selected="false"><span class="n">4</span>빙고 훈련</button>
-    <button class="tab" role="tab" id="tab-team" data-t="team" aria-selected="false" hidden><span class="n">4</span>우리 조 빙고</button>
+    <button class="tab" role="tab" id="tab-team" data-t="team" aria-selected="false" hidden><span class="n">4</span>빙고 훈련</button>
   </nav>
 </header>
 
@@ -488,7 +492,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
         <div class="opt"><span>목표 줄 수</span><select id="optTarget"></select></div>
         <div class="opt"><span>판 채우기</span><div class="seg" id="optFill"><button data-v="phone">토론해서 고르기(스마트폰)</button><button data-v="pick">한 화면에서 고르기</button><button data-v="random">무작위</button></div></div>
       </div>
-      <p class="hint" id="optHelp" style="margin:0"><b>목표 줄 수</b>: 가로·세로·대각선 중 모든 칸이 호출된 줄을 몇 줄 만들어야 ‘빙고 완성’인지 정합니다. 목표를 채우면 화면에 ‘빙고!’ 창이 뜨고, 같은 호출에서 함께 채운 조는 순위를 가르지 않고 모두 함께 표시합니다.</p>
+      <p class="hint" id="optHelp" style="margin:0"><b>목표 줄 수</b>: 가로·세로·대각선 중 모든 칸이 호출된 줄을 몇 줄 만들어야 ‘빙고 완성’인지 정합니다. 목표를 채우면 화면에 ‘빙고!’ 창이 뜨고, 같은 호출에서 함께 채운 <span id="optWho">조는</span> 순위를 가르지 않고 모두 함께 표시합니다.</p>
       <div class="row">
         <span id="teamOpt" class="row" style="gap:6px"><label for="optTeams" class="hint">조 수</label><select id="optTeams" style="border:1.5px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface);font-weight:700"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></span>
         <button class="btn primary" id="bNew">새 게임 준비</button>
@@ -501,8 +505,8 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <details class="live lechist" id="lecHist" hidden><summary>강의 기록 보기·삭제 <button class="btn lh-reload" id="lhReload" type="button">새로 고침</button></summary><div id="lecHistBody" style="display:grid;gap:10px;margin-top:10px"></div></details>
 
     <div class="picker" id="picker" hidden>
-      <div class="head" style="gap:2px"><span class="eyebrow">판 짜기</span><h2 style="font-size:1.35rem">조별 토론으로 빙고판에 넣을 위험요인을 고릅니다</h2>
-        <p class="lead" style="margin:0">조를 고른 뒤 오른쪽 목록에서 위험요인을 누르면 판의 빈칸에 차례로 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다.</p></div>
+      <div class="head" style="gap:2px"><span class="eyebrow">판 짜기</span><h2 style="font-size:1.35rem"><span class="teamonly">조별 토론으로 </span>빙고판에 넣을 위험요인을 고릅니다</h2>
+        <p class="lead" style="margin:0"><span class="teamonly">조를 고른 뒤 </span>오른쪽 목록에서 위험요인을 누르면 판의 빈칸에 차례로 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다.</p></div>
       <div class="ptabs" id="pTabs" role="group" aria-label="조 선택"></div>
       <div class="pwrap">
         <div class="pboard">
@@ -542,7 +546,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <div id="tJoin" hidden style="display:grid;gap:10px"><div id="tJoinBody" style="display:grid;gap:10px"></div></div>
     <div id="tPick" hidden style="display:grid;gap:14px">
       <div class="tbar"><div style="display:grid;gap:2px"><span class="eyebrow">판 짜기</span><input class="bname" id="tName" aria-label="조 이름"></div><div class="row"><span class="pill" id="tCount"></span><button class="btn ghost" id="tSwitch">조 바꾸기</button></div></div>
-      <p class="hint" style="margin:0">훈련 사례는 위쪽 ‘상황파악·위험예지·만다라트’ 탭에서 볼 수 있습니다. 조원끼리 토론해서 정한 위험요인을 아래 목록에서 누르면 판의 빈칸에 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다. 여러 명이 동시에 고치면 마지막 입력만 남으니 입력은 한 사람이 맡으세요.</p>
+      <p class="hint" style="margin:0">훈련 사례는 위쪽 ‘상황파악·위험예지·만다라트’ 탭에서 볼 수 있습니다. <span class="teamonly">조원끼리 토론해서 정한 </span>위험요인을 아래 목록에서 누르면 판의 빈칸에 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다.<span class="teamonly"> 여러 명이 동시에 고치면 마지막 입력만 남으니 입력은 한 사람이 맡으세요.</span></p>
       <div class="row"><button class="btn" data-go2="w5">상황 보기</button><button class="btn" data-go2="kyt">위험예지 보기</button><button class="btn" data-go2="mand">만다라트 보기</button></div>
       <div class="pgrid" id="tGrid"></div>
       <div class="row"><button class="btn" id="tFill">남은 칸 무작위로 채우기</button><button class="btn ghost" id="tClear">전체 비우기</button></div>
@@ -3053,6 +3057,7 @@ function syncOpts(){
   const set=(id,v)=>document.querySelectorAll(id+" button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===String(v)));
   set("#optMode",c.mode);set("#optSrc",c.src);set("#optFill",c.fill);set("#optSize",c.size);
   document.querySelectorAll("#optSize button").forEach(b=>{const n=+b.dataset.v;b.disabled=c.fill==="random"&&n*n>P});
+  {const w=$("#optWho");if(w)w.textContent=c.mode==="team"?"조는":"사람은"}
   $("#teamOpt").hidden=c.mode!=="team"||c.fill==="phone";$("#optTeams").value=Math.min(c.teams,6);
   const max=lineCount(c.size);if(c.target>max)c.target=Math.min(3,max);
   $("#optTarget").innerHTML=Array.from({length:Math.min(max,6)},(_,i)=>`<option value="${i+1}" ${i+1===c.target?"selected":""}>${i+1}줄</option>`).join("");
@@ -3176,7 +3181,8 @@ function renderPicker(){
   const c=S.cfg,n=c.size,N=n*n,b=G.boards[G.pt];
   $("#pTabs").innerHTML=G.mode==="team"?G.boards.map((x,i)=>{const k=x.picks.filter(Boolean).length;
     return `<button class="btn${k===N?" full":""}" aria-pressed="${i===G.pt}" data-pt="${i}">${esc(x.name)} <span class="pg">${k}/${N}</span></button>`}).join(""):"";
-  $("#pName").value=b.name;$("#pName").readOnly=G.mode!=="team";
+  $("#pName").value=b.name;$("#pName").readOnly=G.mode!=="team";$("#pName").setAttribute("aria-label",G.mode==="team"?"조 이름":"판 이름");
+  document.querySelectorAll("#picker .teamonly").forEach(x=>x.hidden=G.mode!=="team");
   const k=b.picks.filter(Boolean).length;
   $("#pCount").textContent=`${k}/${N}칸`;
   const pg=$("#pGrid");pg.className=`pgrid s${n} dnd`;pg.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;
@@ -3219,7 +3225,7 @@ function renderPlay(){
     if(bingoSeen<0||n<bingoSeen)bingoSeen=n;
     else if(n>bingoSeen){bingoSeen=n;const nw=G.boards.filter(b=>b.rank&&b.at===n);if(nw.length)pendingBingo={names:nw.map(b=>b.name),n,ci:gci()}}}
   if(ROLE==="host"){if(revealCount<0)revealCount=G.calls.length;else if(G.calls.length>revealCount){revealCount=G.calls.length;showReveal()}else revealCount=G.calls.length}
-  if(ROLE==="host"&&G.live&&LIVE&&ADMIN&&LIVE.phase==="play"&&turnMode(LIVE)&&!over&&!resumeHeld()&&$("#reveal").hidden&&G.last&&(LIVE.ack||0)<(LIVE.calls||[]).length)showReveal();
+  if(ROLE==="host"&&G.live&&LIVE&&ADMIN&&hostOwn()&&LIVE.phase==="play"&&turnMode(LIVE)&&!over&&!resumeHeld()&&$("#reveal").hidden&&G.last&&(LIVE.ack||0)<(LIVE.calls||[]).length)showReveal();
   if(pendingBingo&&$("#reveal").hidden)flushBingo();
   $("#bLog").innerHTML=G.calls.length?`<span style="border:0;background:none;padding:0">호출 기록</span>`+G.calls.map((x,i)=>`<span>${i+1}. ${esc(x.text)}</span>`).join(""):"";
 }
@@ -3346,6 +3352,7 @@ const byOrder=(a,b)=>((a.no||0)-(b.no||0))||((a.created||0)-(b.created||0));
 const rosterOf=bs=>bs.map(b=>({bid:b.bid,name:b.name,no:b.no||0,kind:b.kind,done:!!b.done,count:(b.picks||[]).filter(Boolean).length,owned:!!b.owner,own:b.owner||"",host:!!b.byHost}));
 function curBoards(){return LIVE?BOARDS.filter(b=>b.sid===LIVE.sid):[]}
 /* 차례: 조별전은 조 번호순, 개인전은 빙고를 시작할 때 정한 이름 가나다순(order=판 bid 목록). 호출·확인·대신 호출은 두 방식이 같은 코드를 씀 */
+const hostOwn=()=>!!LIVE&&(LIVE.hostUid===UID||!!(HOSTINFO.claimed&&HOSTINFO.code===CODE));   // 이 PC가 이 강의의 진행 권한을 가졌는지(호출 처리와 같은 기준)
 const turnMode=L=>!!L&&(L.mode==="team"||Array.isArray(L.order));
 const isTurn=(L,b)=>!!L&&!!b&&(L.mode==="team"?b.no-1===L.turn:(L.order||[])[L.turn]===b.bid);
 const turnLen=L=>L.mode==="team"?L.teams:Math.max(1,(L.order||[]).length);
@@ -3375,6 +3382,8 @@ const API={
         return {bid};
       }
       const name=String(q.name||"").trim().slice(0,20);if(!name)return {err:"이름을 입력해 주세요."};
+      {const key=x=>String(x||"").replace(/\s+/g,"").toLowerCase();   // 띄어쓰기·대소문자만 다른 이름도 같은 이름으로 봄
+        if(LIST.some(x=>x.bid!==UID&&key(x.name)===key(name)))return {err:`‘${name}’은(는) 먼저 참가한 사람이 쓰는 이름입니다. 다른 이름을 입력해 주세요(예: ${name.slice(0,18)}2).`}}
       const ref=bRef(L.sid,UID);let snap=null;try{snap=await ref.get()}catch(e){snap=null}
       if(snap&&snap.exists){if(L.phase==="pick")await ref.update({name});return {bid:UID}}
       if(L.phase!=="pick")return {err:"이미 빙고가 시작되어 새로 참가할 수 없습니다."};
@@ -4060,7 +4069,7 @@ function showReveal(){
 }
 function closeReveal(){if($("#reveal").hidden)return;$("#reveal").hidden=true;ackReveal();flushBingo()}
 /* 실시간(조별전·개인전): 강사가 호출 내용을 확인했음을 기록(ack=확인한 호출 수). 이 값이 호출 수와 같아야 다음 조가 호출할 수 있음 */
-function ackReveal(){if(!G||!G.live||!LIVE||!ADMIN||LIVE.phase!=="play"||!turnMode(LIVE))return;
+function ackReveal(){if(!G||!G.live||!LIVE||!ADMIN||!hostOwn()||LIVE.phase!=="play"||!turnMode(LIVE))return;
   const n=(LIVE.calls||[]).length;if((LIVE.ack||0)<n)writeS({...clone(LIVE),ack:n})}
 /* 호출 내용 창을 닫은 뒤 빙고창을 띄우고, 실시간이면 스마트폰에도 알림(ack) */
 let pendingBingo=null;
@@ -4124,6 +4133,7 @@ function tSave(now){if(!TB||isView())return;tDirty=true;clearTimeout(tTimer);
 function tBoardObj(){if(TB&&!TB.w)TB.w={};return TB}
 function renderTeam(){
   if(ROLE!=="team")return;
+  {const tb=$("#tab-team"),nm=!LIVE?"빙고 훈련":LIVE.mode==="solo"?"나의 빙고":"우리 조 빙고";if(tb&&tb.lastChild&&tb.lastChild.textContent!==nm)tb.lastChild.textContent=nm}   // 탭 이름: 조별전 ‘우리 조 빙고’, 개인전 ‘나의 빙고’, 강의 정보를 받기 전에는 ‘빙고 훈련’
   applyCaseLock();applyHalt();
   const L=LIVE,show=id=>["tWait","tJoin","tPick","tPlay"].forEach(k=>$("#"+k).hidden=k!==id),badge=$("#teamBadge");
   if(!FB){show("tWait");$("#tWait").innerHTML="<b>실시간 서버에 연결되지 않은 화면입니다.</b>";badge.hidden=true;return}
@@ -4167,7 +4177,7 @@ function renderTeam(){
           <p class="hint" style="margin:0">${jr.host?"교수님이 진행하는 조입니다. 참여폰으로 판을 볼 수 있습니다. ":"조원 모두 항목을 골라 함께 판을 채웁니다. "}${L.lock?"교수님이 조를 확정했으므로 한 번 고르면 바꿀 수 없습니다. ":""}대표폰은 조마다 1대이며 ‘입력 완료’와 호출을 맡습니다. 참여폰은 판 채우기와 칸 조정을 함께 합니다.${taken?" 이 조에는 이미 대표폰이 있어 참여폰으로만 참가할 수 있습니다.":""}</p>
           <div class="row"><button class="btn ghost" data-role="back">← 조 다시 고르기</button></div>`}}
     else if(L.phase!=="pick"){$("#tJoinBody").innerHTML=`<b>이미 빙고가 시작되었습니다.</b><span class="hint">다음 훈련에 참가해 주세요.</span>`}
-    else{$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">이름을 입력하고 참가하세요</h2><div class="addrow"><input id="tJoinName" type="text" maxlength="20" placeholder="이름(예: 상병 김안전)" aria-label="이름" value="${esc(P.name||"")}"><button class="btn primary" id="tJoinGo">참가</button></div>`}
+    else{$("#tJoinBody").innerHTML=`<h2 style="font-size:1.3rem">이름을 입력하고 참가하세요</h2><div class="addrow joinrow"><input id="tJoinName" type="text" maxlength="20" placeholder="이름(예: 상병 김안전)" aria-label="이름" value="${esc(P.name||"")}"><button class="btn primary" id="tJoinGo">참가</button></div>`}
     return}
   if(!MINE){show("tWait");$("#tWait").innerHTML="<b>내 판을 불러오는 중입니다…</b>";resubBoards();return}
   syncTB();
@@ -4195,7 +4205,8 @@ function renderTeamPick(){
   const L=LIVE,n=L.size,N=n*n,b=tBoardObj(),view=isView(),done=!!TB.done,ro=done;
   $("#tPick").hidden=false;["tWait","tJoin","tPlay"].forEach(k=>$("#"+k).hidden=true);
   if(document.activeElement!==$("#tName"))$("#tName").value=TB.name||"";
-  $("#tName").readOnly=done||L.mode==="team";   // 조 이름은 교수 PC에서 정한 이름 그대로(스마트폰에서 바꾸지 않음)
+  $("#tName").readOnly=true;$("#tName").setAttribute("aria-label",L.mode==="team"?"조 이름":"이름");
+  document.querySelectorAll("#tPick .teamonly").forEach(x=>x.hidden=L.mode!=="team");   // 조원·토론 안내는 조별전에서만   // 조 이름은 교수 PC에서 정한 이름 그대로(스마트폰에서 바꾸지 않음)
   const k=b.picks.filter(Boolean).length;$("#tCount").textContent=`${k}/${N}칸`;
   const g=$("#tGrid");g.className=`pgrid s${n}${ro?"":" dnd"}`;g.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;
   g.innerHTML=b.picks.map((t,i)=>t
@@ -4206,11 +4217,11 @@ function renderTeamPick(){
   $("#tSrc").innerHTML=
     groups().map(g=>`<div class="grp">${g.k>=0?`<div class="grp-title"><span class="eyebrow" style="color:var(--ink2)">세부요인:</span><span class="grp-head" style="background:${colorVar(g.k)}">${esc(g.name)}</span></div>`:`<span class="eyebrow" style="color:var(--ink2)">${esc(g.name)}</span>`}<div class="chips">${g.items.map(t=>chip(t,"")).join("")}</div></div>`).join("");   // 스마트폰: 번호 없이 ‘세부요인: 이름’ 한 줄로 표시
   const dn=LIST.filter(x=>x.done).length;
-  $("#tState").innerHTML=repWarn(done)+(view?(done?`<b>입력 완료!</b> 다른 조를 기다리는 중입니다(완료 ${dn}/${LIST.length}). 고치려면 대표폰에서 ‘다시 고치기’를 누르세요.`:full?`<b>판이 다 찼습니다.</b> 조원과 함께 칸을 조정한 뒤, 대표폰에서 ‘입력 완료’를 누르세요.`:`<b>${N-k}칸 남았습니다.</b> 조원 모두 항목을 골라 넣을 수 있습니다. 같은 항목은 한 번만 들어갑니다.`):done?`<b>입력 완료!</b> 다른 ${L.mode==="team"?"조":"참가자"}를 기다리는 중입니다(완료 ${dn}/${LIST.length}).`:full?`<b>판이 다 찼습니다.</b> 토론 결과가 맞으면 ‘입력 완료’를 누르세요.`:`${N-k}칸 남았습니다.${N-k>FILL_MAX?` 토론으로 채우다가 ${FILL_MAX}칸 이하가 남으면 ‘남은 칸 무작위로 채우기’를 쓸 수 있습니다.`:""}`);
+  $("#tState").innerHTML=repWarn(done)+(view?(done?`<b>입력 완료!</b> 다른 조를 기다리는 중입니다(완료 ${dn}/${LIST.length}). 고치려면 대표폰에서 ‘다시 고치기’를 누르세요.`:full?`<b>판이 다 찼습니다.</b> 조원과 함께 칸을 조정한 뒤, 대표폰에서 ‘입력 완료’를 누르세요.`:`<b>${N-k}칸 남았습니다.</b> 조원 모두 항목을 골라 넣을 수 있습니다. 같은 항목은 한 번만 들어갑니다.`):done?`<b>입력 완료!</b> 다른 ${L.mode==="team"?"조":"참가자"}를 기다리는 중입니다(완료 ${dn}/${LIST.length}).`:full?`<b>판이 다 찼습니다.</b> ${L.mode==="team"?"토론 결과가":"고른 내용이"} 맞으면 ‘입력 완료’를 누르세요.`:`${N-k}칸 남았습니다.${N-k>FILL_MAX?` ${L.mode==="team"?"토론으로 채우다가":"채우다가"} ${FILL_MAX}칸 이하가 남으면 ‘남은 칸 무작위로 채우기’를 쓸 수 있습니다.`:""}`);
   const dbtn=$("#tDone");dbtn.textContent=done?"다시 고치기":"입력 완료";dbtn.disabled=view||(!done&&!full);dbtn.hidden=view;
   {const r=N-k;$("#tFill").disabled=ro||full||r>FILL_MAX;$("#tFill").title=view?"대표폰에서만 쓸 수 있습니다":r>FILL_MAX?`남은 칸이 ${FILL_MAX}칸 이하일 때 쓸 수 있습니다(지금 ${r}칸)`:""}$("#tClear").disabled=ro||!k;
   $("#tFill").hidden=view;$("#tClear").hidden=view;
-  $("#tSwitch").textContent=L.mode==="team"?"조·역할 바꾸기":"조 바꾸기";
+  $("#tSwitch").textContent=L.mode==="team"?"조·역할 바꾸기":"참여자 이름 변경하기";
   {const lk=!!L.lock;$("#tSwitch").disabled=lk;$("#tSwitch").title=lk?"교수님이 조를 확정해 바꿀 수 없습니다":""}
 }
 const viewOnly=()=>{if(!isView())return false;toast("입력 완료·무작위 채우기·전체 비우기는 대표폰에서만 할 수 있습니다.");return true};
@@ -4231,7 +4242,7 @@ function tToggle(text){const b=tBoardObj();if(!b||TB.done)return;const i=b.picks
   else{const e=tSel>=0&&b.picks[tSel]===null?tSel:b.picks.indexOf(null);if(e<0){toast("판이 다 찼습니다. 뺄 칸의 ✕를 먼저 누르세요.");return}b.picks[e]=text}
   normW(b);tSel=-1;tSave();renderTeamPick()}
 $("#tSwitch").onclick=async()=>{if(LIVE&&LIVE.lock){toast("교수님이 조를 확정해 조와 역할을 바꿀 수 없습니다.");return}
-  const view=isView();if(!confirm(view?"조와 역할을 다시 고를까요?":"조와 역할을 다시 고를까요? 지금 판은 그대로 남고, 이 조의 대표폰 자리는 비워 두어 이 기기나 다른 기기가 다시 맡을 수 있습니다."))return;
+  const view=isView();if(!confirm(LIVE&&LIVE.mode==="solo"?"참여자 이름을 변경할까요?\n지금 판은 그대로 남습니다. 이름을 다시 입력하고 ‘참가’를 누르면 바뀝니다.":view?"조와 역할을 다시 고를까요?":"조와 역할을 다시 고를까요? 지금 판은 그대로 남고, 이 조의 대표폰 자리는 비워 두어 이 기기나 다른 기기가 다시 맡을 수 있습니다."))return;
   // 조 바꾸기: 이 기기가 고른 조를 비워 두고, 목록에서도 바로 ‘비어 있음’으로 보이게 함(다시 같은 조를 골라도 됨)
   if(!view&&LIVE&&LIVE.mode==="team"&&P.sid===LIVE.sid&&/^t\d+$/.test(P.bid||"")){const old=P.bid,tb=TB;try{await bRef(LIVE.sid,old).update({owner:null});
     // 교수 PC가 참가 현황을 다시 보내기 전까지도 목록이 맞게 보이도록 이 기기가 아는 최신 상태로 바로 고침(입력 완료 여부·칸 수)
