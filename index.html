@@ -166,7 +166,6 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .callcard .ct{font-size:1.15rem;font-weight:900;color:var(--signal-ink)}
 .callcard .cq{font-size:.88rem}
 .boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
-.boards.solo{grid-template-columns:minmax(0,640px);justify-content:center}
 .board{background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:10px;align-content:start}
 .board.turn{border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
 .board.win{border-color:var(--signal);background:var(--signal-soft);box-shadow:0 0 0 3px var(--signal-soft)}
@@ -505,8 +504,8 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <details class="live lechist" id="lecHist" hidden><summary>강의 기록 보기·삭제 <button class="btn lh-reload" id="lhReload" type="button">새로 고침</button></summary><div id="lecHistBody" style="display:grid;gap:10px;margin-top:10px"></div></details>
 
     <div class="picker" id="picker" hidden>
-      <div class="head" style="gap:2px"><span class="eyebrow">판 짜기</span><h2 style="font-size:1.35rem"><span class="teamonly">조별 토론으로 </span>빙고판에 넣을 위험요인을 고릅니다</h2>
-        <p class="lead" style="margin:0"><span class="teamonly">조를 고른 뒤 </span>오른쪽 목록에서 위험요인을 누르면 판의 빈칸에 차례로 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다.</p></div>
+      <div class="head" style="gap:2px"><span class="eyebrow">판 짜기</span><h2 style="font-size:1.35rem">조별 토론으로 빙고판에 넣을 위험요인을 고릅니다</h2>
+        <p class="lead" style="margin:0">조를 고른 뒤 오른쪽 목록에서 위험요인을 누르면 판의 빈칸에 차례로 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다.</p></div>
       <div class="ptabs" id="pTabs" role="group" aria-label="조 선택"></div>
       <div class="pwrap">
         <div class="pboard">
@@ -3067,6 +3066,9 @@ function syncOpts(){
   $("#optFill").closest(".opt").hidden=okLive;
   if(okLive&&c.fill!=="phone"){c.fill="phone";return syncOpts()}
   if(!okLive&&c.fill==="phone"){c.fill="pick";return syncOpts()}
+  // 개인전은 스마트폰 방식에서만: 스마트폰 없이 하는 방식(한 화면·무작위)에는 개인전을 두지 않음
+  {const sb=document.querySelector('#optMode button[data-v="solo"]');if(sb)sb.hidden=!okLive}
+  if(!okLive&&ROLE!=="team"&&!(G&&G.live)&&c.mode==="solo"){c.mode="team";return syncOpts()}
   document.querySelectorAll("#optMode button,#optSrc button").forEach(b=>b.disabled=false);
   const lock=c.fill==="phone"&&liveActive();
   document.querySelectorAll("#optMode button,#optSrc button,#optSize button").forEach(b=>{if(lock)b.disabled=true});
@@ -3077,14 +3079,14 @@ function blankBoard(name,N){return {name,picks:Array(N).fill(null),w:{},cells:nu
 function newGame(){
   syncOpts();
   if(S.cfg.fill==="phone"){G=null;revealCount=-1;if(LIVE&&LIVE.phase==="play")buildLiveG(BOARDS);renderBingo();return}
-  const c=S.cfg,N=c.size*c.size,count=c.mode==="team"?c.teams:1;
-  const prev=G&&G.boards&&G.mode===c.mode?G.boards.map(b=>b.name):[];
-  const boards=Array.from({length:count},(_,i)=>blankBoard(prev[i]||(c.mode==="team"?`${i+1}조`:"나의 빙고판"),N));
-  G={mode:c.mode,phase:"pick",pt:0,boards,deck:[],calls:[],turn:0,ranks:0,last:null};
+  const c=S.cfg,N=c.size*c.size,count=c.teams;   // 스마트폰 없이 하는 방식은 조별전만(개인전은 스마트폰 방식에만 있음)
+  const prev=G&&G.boards&&G.mode==="team"?G.boards.map(b=>b.name):[];
+  const boards=Array.from({length:count},(_,i)=>blankBoard(prev[i]||`${i+1}조`,N));
+  G={mode:"team",phase:"pick",pt:0,boards,deck:[],calls:[],turn:0,ranks:0,last:null};
   pSel=-1;
   if(c.fill==="random"){
     let P=shuffle(pool());
-    if(c.mode==="team")P=P.slice(0,Math.min(P.length,Math.ceil(N*1.35)));
+    P=P.slice(0,Math.min(P.length,Math.ceil(N*1.35)));
     boards.forEach(b=>{b.picks=shuffle(P.slice()).slice(0,N);normW(b)});
     startPlay();return;
   }
@@ -3179,10 +3181,9 @@ document.addEventListener("pointercancel",()=>dragEnd(false));
 function renderPicker(){
   if(DRAG&&DRAG.on&&DRAG.grid.id==="pGrid"){DRAG.pending=true;return}
   const c=S.cfg,n=c.size,N=n*n,b=G.boards[G.pt];
-  $("#pTabs").innerHTML=G.mode==="team"?G.boards.map((x,i)=>{const k=x.picks.filter(Boolean).length;
-    return `<button class="btn${k===N?" full":""}" aria-pressed="${i===G.pt}" data-pt="${i}">${esc(x.name)} <span class="pg">${k}/${N}</span></button>`}).join(""):"";
-  $("#pName").value=b.name;$("#pName").readOnly=G.mode!=="team";$("#pName").setAttribute("aria-label",G.mode==="team"?"조 이름":"판 이름");
-  document.querySelectorAll("#picker .teamonly").forEach(x=>x.hidden=G.mode!=="team");
+  $("#pTabs").innerHTML=G.boards.map((x,i)=>{const k=x.picks.filter(Boolean).length;
+    return `<button class="btn${k===N?" full":""}" aria-pressed="${i===G.pt}" data-pt="${i}">${esc(x.name)} <span class="pg">${k}/${N}</span></button>`}).join("");
+  $("#pName").value=b.name;$("#pName").readOnly=false;
   const k=b.picks.filter(Boolean).length;
   $("#pCount").textContent=`${k}/${N}칸`;
   const pg=$("#pGrid");pg.className=`pgrid s${n} dnd`;pg.style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;
@@ -3200,7 +3201,7 @@ function renderPicker(){
 }
 function renderPlay(){
   const c=S.cfg,n=c.size;
-  const box=$("#boards");box.className="boards"+(G.mode==="solo"?" solo":"");
+  const box=$("#boards");box.className="boards";
   box.innerHTML=G.boards.map((b,bi)=>{
     const isTurn=turnBased()&&bi===G.turn;
     const pills=[`<span class="pill">${b.lines}줄</span>`];
@@ -3215,11 +3216,11 @@ function renderPlay(){
         return `<div class="cell${x.m?" m":""}${x.ln?" ln":""}${fl}" role="button" tabindex="0" data-c="${ci}" aria-pressed="${x.m}">${esc(x.t)}${x.w?`<span class="wt">×${x.w}</span>`:""}</div>`}).join("")}</div></div></div>`}).join("");
   const nm=(G.boards[G.turn]||{}).name||"";
   const over=gameOver(),winNames=G.boards.filter(b=>b.rank).map(b=>b.name);
-  $("#bNow").innerHTML=G.live&&LIVE&&LIVE.phase==="done"?`<em>지난 강의 기록</em> — 호출 ${G.calls.length}번 · 빙고: ${winNames.map(esc).join(", ")||"없음"}`:over?`<em>빙고로 게임이 끝났습니다</em> — 빙고: ${winNames.map(esc).join(", ")||"(다른 판)"}`:G.live&&LIVE.mode==="solo"&&!turnMode(LIVE)?`개인전 · 참가 ${G.boards.length}명 · 차례를 정하는 중입니다.`:G.mode==="team"?`지금 차례: <em>${esc(nm)}</em> — 자기 판에서 위험요인 한 칸을 고르고 대책을 말하세요.`:`표시한 칸 ${G.boards[0].cells.filter(x=>x.m).length}/${n*n} · 완성 ${G.boards[0].lines}줄 / 목표 ${c.target}줄`;
+  $("#bNow").innerHTML=G.live&&LIVE&&LIVE.phase==="done"?`<em>지난 강의 기록</em> — 호출 ${G.calls.length}번 · 빙고: ${winNames.map(esc).join(", ")||"없음"}`:over?`<em>빙고로 게임이 끝났습니다</em> — 빙고: ${winNames.map(esc).join(", ")||"(다른 판)"}`:G.live&&LIVE.mode==="solo"&&!turnMode(LIVE)?`개인전 · 참가 ${G.boards.length}명 · 차례를 정하는 중입니다.`:`지금 차례: <em>${esc(nm)}</em> — 자기 판에서 위험요인 한 칸을 고르고 대책을 말하세요.`;
   $("#bUndo").disabled=!G.calls.length;$("#bUndo").hidden=!!(G.live&&LIVE&&LIVE.phase==="done");
   const L=G.last,cc=$("#callCard");
   if(L){const par=parentOf(L.text),nb=new Set(L.hits.map(h=>h[0])).size;
-    cc.hidden=false;cc.innerHTML=`<span class="eyebrow">${esc(L.by)} 호출</span><div class="ct">${esc(L.text)}</div><div class="cq">${par?`세부요인 “${esc(par)}”에서 나온 요인입니다. `:""}이 위험을 막을 대책을 한 가지 말해 보세요. · ${G.live&&LIVE&&LIVE.mode==="solo"?(()=>{const nm=[...new Set(L.hits.map(h=>G.boards[h[0]].name))];return `이 요인을 고른 사람 ${nb}명: ${nm.slice(0,8).map(esc).join(", ")}${nm.length>8?` 외 ${nm.length-8}명`:""}`})():G.mode==="team"?`이 요인을 고른 조 ${nb}개: ${[...new Set(L.hits.map(h=>G.boards[h[0]].name))].map(esc).join(", ")}`:""}</div>`}
+    cc.hidden=false;cc.innerHTML=`<span class="eyebrow">${esc(L.by)} 호출</span><div class="ct">${esc(L.text)}</div><div class="cq">${par?`세부요인 “${esc(par)}”에서 나온 요인입니다. `:""}이 위험을 막을 대책을 한 가지 말해 보세요. · ${G.live&&LIVE&&LIVE.mode==="solo"?(()=>{const nm=[...new Set(L.hits.map(h=>G.boards[h[0]].name))];return `이 요인을 고른 사람 ${nb}명: ${nm.slice(0,8).map(esc).join(", ")}${nm.length>8?` 외 ${nm.length-8}명`:""}`})():`이 요인을 고른 조 ${nb}개: ${[...new Set(L.hits.map(h=>G.boards[h[0]].name))].map(esc).join(", ")}`}</div>`}
   else cc.hidden=true;
   if(ROLE==="host"){const n=G.calls.length;
     if(bingoSeen<0||n<bingoSeen)bingoSeen=n;
@@ -3235,8 +3236,7 @@ function renderBingo(){
   const srcName=c.src==="mand"?`만다라트 “${caseM(S.ci).coreThemes[S.ti].name}”의 구체적 위험요인`:"사례 빙고 문항";
   $("#bLead").textContent=c.mode==="team"
     ?`조별전: 각 조가 토론으로 위험요인을 골라 자기 빙고판을 짭니다. 차례가 된 조가 한 칸을 골라 그 위험요인과 대책을 말하면, 같은 요인을 고른 모든 조가 함께 표시합니다. 먼저 ${c.target}줄을 완성한 조가 이깁니다. 문항: ${srcName}.`
-    :c.fill==="phone"?`개인전: 각자 위험요인을 골라 자기 빙고판을 짭니다. 차례(이름 가나다순)가 된 사람이 한 칸을 골라 그 위험요인과 대책을 말하면, 같은 요인을 고른 모든 사람이 함께 표시합니다. 먼저 ${c.target}줄을 완성한 사람이 이깁니다. 문항: ${srcName}.`
-    :`개인전: 위험요인을 골라 판을 짠 뒤, 위험요인을 찾아 말하거나 진행자가 호출한 칸을 표시합니다. ${c.target}줄을 완성하면 행동 목표를 외칩니다. 문항: ${srcName}.`;
+    :`개인전: 각자 위험요인을 골라 자기 빙고판을 짭니다. 차례(이름 가나다순)가 된 사람이 한 칸을 골라 그 위험요인과 대책을 말하면, 같은 요인을 고른 모든 사람이 함께 표시합니다. 먼저 ${c.target}줄을 완성한 사람이 이깁니다. 문항: ${srcName}.`;
   $("#bInfo").textContent=`목록 ${pool().length}개 · 판 ${c.size}×${c.size}${G&&G.phase==="play"?" · 진행 중":G?" · 판 짜는 중":""}`;
   const phone=c.fill==="phone";$("#livePanel").hidden=!phone;
   $("#lecHist").hidden=!(phone&&FB&&ADMIN);
@@ -3278,15 +3278,9 @@ function cellAct(el){
     if(bi!==G.turn){toast(`지금은 ${G.boards[G.turn].name} 차례입니다.`);return}
     liveCall(x.t,b.bid);return;
   }
-  if(G.mode==="team"){
-    if(bi!==G.turn){$("#bNow").innerHTML=`지금은 <em>${esc(G.boards[G.turn].name)}</em> 차례입니다. 그 조의 판에서 골라 주세요.`;return}
-    if(x.m){$("#bNow").innerHTML=`이미 표시한 칸입니다. <em>${esc(b.name)}</em>, 다른 칸을 고르세요.`;return}
-    call(x.t,b.name);G.turn=(G.turn+1)%G.boards.length;renderBingo();
-  }else{
-    if(!x.m)call(x.t,"직접");
-    else{x.m=false;G.calls=G.calls.filter(k=>k.text!==x.t);G.deck.push(x.t);replayLocal();bingoSeen=G.calls.length}
-    renderBingo();
-  }
+  if(bi!==G.turn){$("#bNow").innerHTML=`지금은 <em>${esc(G.boards[G.turn].name)}</em> 차례입니다. 그 조의 판에서 골라 주세요.`;return}
+  if(x.m){$("#bNow").innerHTML=`이미 표시한 칸입니다. <em>${esc(b.name)}</em>, 다른 칸을 고르세요.`;return}
+  call(x.t,b.name);G.turn=(G.turn+1)%G.boards.length;renderBingo();
 }
 $("#boards").addEventListener("click",e=>{const el=e.target.closest(".cell");if(el)cellAct(el)});
 $("#boards").addEventListener("keydown",e=>{const el=e.target.closest(".cell");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();cellAct(el)}});
@@ -3442,6 +3436,7 @@ const API={
         const done=bs.filter(b=>b.done);
         if(Sx.mode==="team"&&done.length<Sx.teams)return {err:"모든 조가 입력을 마쳐야 시작할 수 있습니다."};
         if(!done.length)return {err:"입력을 마친 참가자가 없습니다."};
+        if(Sx.mode==="solo"&&done.length<2)return {err:"개인전은 입력을 마친 참가자가 2명 이상이어야 시작할 수 있습니다."};
         const seen={};bs.forEach(b=>seen[b.bid]=(b.press&&b.press.seq)||0);
         Object.assign(Sx,{phase:"play",turn:0,calls:[],seen,ack:0});if(Sx.mode==="solo")Sx.order=soloOrder(done);Sx.results=calcR(Sx,bs);await writeS(Sx);return {ok:true};
       }
@@ -3833,7 +3828,7 @@ function renderLiveHost(){
     /* 참가한 기기가 지금 실제로 접속해 있는지 함께 표시(접속 확인 중 → 접속 중 / 접속 끊김) */
     const conn=b=>{const st=presState(b);return st==="chk"?" · 접속 확인 중":st==="off"?" · 접속 끊김":""};
     const tiles=LIST.map(b=>`<div class="tile${b.done?" done":""}"><b>${esc(b.name)}</b><div class="bar"><i style="width:${Math.round(b.count/N*100)}%"></i></div><span class="hint">${b.done?(b.host?"입력 완료 · 교수님 진행":"입력 완료"):!b.owned?(b.kind==="team"?"대표폰 연결 전":`${b.count}/${N}칸`):presState(b)==="off"?`${b.count}/${N}칸`:`${b.count}/${N}칸 입력 중`}${conn(b)}${b.kind==="team"&&viewN(b.bid)?` · 참여폰 ${viewN(b.bid)}대`:""}</span>${!b.done?`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-donefor="${b.bid}" title="${b.kind==="team"?"대표폰":"스마트폰"}이 작동하지 않을 때 교수님이 대신 입력 완료로 바꿉니다">대신 입력 완료</button>`:`<button class="btn ghost" style="padding:2px 8px;font-size:.75rem" data-undone="${b.bid}" title="이 ${b.kind==="team"?"조":"사람"}이 다시 판을 고칠 수 있게 합니다(판 내용은 그대로)">입력 완료 취소</button>`}</div>`).join("")||`<span class="hint">아직 참가자가 없습니다.</span>`;
-    P_.innerHTML=head+qrBox+`<div class="tbar"><b>참가 현황 · 입력 완료 ${done}/${LIST.length}${L.mode==="team"?`(전체 ${L.teams}개 조)`:"명"}</b>${L.mode==="solo"?`<button class="btn primary" id="lvPlay" ${done?"":"disabled"}>입력 완료한 ${done}명으로 빙고 시작</button>`:`<span class="row"><button class="btn${L.lock?" primary":""}" id="lvLock" title="확정하면 스마트폰에서 조와 역할(대표폰·참여폰)을 바꿀 수 없습니다">${L.lock?"조 확정됨 · 풀기":"조 확정"}</button><span class="hint">${L.lock?"조와 역할을 바꿀 수 없습니다. ":""}모든 조가 입력을 마치면 자동으로 시작합니다.</span></span>`}</div>
+    P_.innerHTML=head+qrBox+`<div class="tbar"><b>참가 현황 · 입력 완료 ${done}/${LIST.length}${L.mode==="team"?`(전체 ${L.teams}개 조)`:"명"}</b>${L.mode==="solo"?`<span class="row"><button class="btn primary" id="lvPlay" ${done>=2?"":"disabled"}>입력 완료한 ${done}명으로 빙고 시작</button>${done<2?`<span class="hint">2명 이상이 입력을 마쳐야 시작할 수 있습니다.</span>`:""}</span>`:`<span class="row"><button class="btn${L.lock?" primary":""}" id="lvLock" title="확정하면 스마트폰에서 조와 역할(대표폰·참여폰)을 바꿀 수 없습니다">${L.lock?"조 확정됨 · 풀기":"조 확정"}</button><span class="hint">${L.lock?"조와 역할을 바꿀 수 없습니다. ":""}모든 조가 입력을 마치면 자동으로 시작합니다.</span></span>`}</div>
       <div class="tiles">${tiles}</div>
       <p class="hint" style="margin:0">판 짜는 동안에는 다른 ${L.mode==="team"?"조가":"사람이"} 볼 수 없도록 판 내용은 가리고 진행 상황만 보여 줍니다. 빙고가 시작되면 모든 판이 공개됩니다.${L.mode==="team"?" 대표폰이 작동하지 않는 조는 ‘대신 입력 완료’를 누르면 조원들이 채운 판 그대로 입력 완료가 되고, 빙고가 시작된 뒤에는 그 조 차례에 교수님이 판의 칸을 눌러 대신 호출합니다.":" 스마트폰이 작동하지 않는 사람은 ‘대신 입력 완료’를 누르면 그 사람이 채운 판 그대로 입력 완료가 되고, 빙고가 시작된 뒤에는 그 사람 차례에 교수님이 판의 칸을 눌러 대신 호출합니다."}</p>
       ${L.mode==="team"?`<details class="nodev"><summary>스마트폰이 없는 조가 있을 때</summary><div class="testbar"><span>스마트폰이 연결되지 않은 조의 판만 무작위로 채우고 입력 완료로 바꿉니다. 스마트폰이 연결된 조의 판은 건드리지 않습니다.</span><button class="btn" id="lvNoDevFill">스마트폰 없는 조 무작위로 채우기</button></div></details>`:""}`;
@@ -4064,7 +4059,7 @@ function showReveal(){
   if(!G||!G.last||ROLE!=="host")return;
   const L=G.last,names=[...new Set(L.hits.map(h=>G.boards[h[0]].name))];
   $("#rvBy").textContent=`${L.by} 호출`;$("#rvText").textContent=L.text;{const up=upSub(L.text),el=$("#rvParent");el.textContent=up?`(${up})`:"";el.hidden=!up}
-  $("#rvSub").innerHTML=pathHtml(L.text)+`<span>이 요인을 고른 ${G.mode==="solo"||(G.live&&LIVE.mode==="solo")?"사람":"조"}: ${names.length?(names.length>8?`${names.slice(0,8).map(esc).join(", ")} 외 ${names.length-8}명`:names.map(esc).join(", ")):"없음"}</span>`+(turnBased()&&G.boards[G.turn]?`<span>다음 차례: <b>${esc(G.boards[G.turn].name)}</b></span>`:"");
+  $("#rvSub").innerHTML=pathHtml(L.text)+`<span>이 요인을 고른 ${G.live&&LIVE.mode==="solo"?"사람":"조"}: ${names.length?(names.length>8?`${names.slice(0,8).map(esc).join(", ")} 외 ${names.length-8}명`:names.map(esc).join(", ")):"없음"}</span>`+(turnBased()&&G.boards[G.turn]?`<span>다음 차례: <b>${esc(G.boards[G.turn].name)}</b></span>`:"");
   $("#reveal").hidden=false;$("#rvClose").focus();
 }
 function closeReveal(){if($("#reveal").hidden)return;$("#reveal").hidden=true;ackReveal();flushBingo()}
@@ -4448,7 +4443,7 @@ function renderAll(){renderW5();renderKYT();renderMand()}
 /* 지난 게임 불러오기(새로고침해도 판이 남도록) */
 let restored=false;
 try{const g=JSON.parse(localStorage.getItem(GKEY)||"null");
-  if(g&&g.G&&g.G.boards&&!g.G.live&&DATA.M[g.ci]&&g.cfg&&[4,5].includes(g.cfg.size)){if(g.cfg&&g.cfg.fill==="phone")g.cfg.fill="pick";S.ci=g.ci;S.ti=g.ti||0;Object.assign(S.cfg,g.cfg||{});G=g.G;caseSel.value=S.ci;restored=true}}catch(e){}
+  if(g&&g.G&&g.G.boards&&!g.G.live&&DATA.M[g.ci]&&g.cfg&&g.cfg.mode!=="solo"&&g.G.mode!=="solo"&&[4,5].includes(g.cfg.size)){if(g.cfg&&g.cfg.fill==="phone")g.cfg.fill="pick";S.ci=g.ci;S.ti=g.ti||0;Object.assign(S.cfg,g.cfg||{});G=g.G;caseSel.value=S.ci;restored=true}}catch(e){}
 renderAll();if(restored){syncOpts();renderBingo()}else newGame();
 go("w5");   // 앱은 항상 ‘상황파악’ 탭에서 시작
 initLive();
