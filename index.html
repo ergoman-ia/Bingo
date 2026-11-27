@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>위험예지 빙고게임</title>
+<title>위험예지 빙고 훈련</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
@@ -57,7 +57,7 @@ button,select,input{font:inherit;color:inherit}
 .tab{background:transparent;border:0;color:var(--olive-ink);opacity:.72;padding:9px 14px 11px;cursor:pointer;font-weight:700;white-space:nowrap;border-bottom:3px solid transparent;display:flex;gap:8px;align-items:center}
 .tab .n{font-family:var(--mono);font-size:.72rem;border:1.5px solid currentColor;border-radius:50%;width:20px;height:20px;display:inline-grid;place-items:center}
 .tab[aria-selected="true"]{opacity:1;border-bottom-color:var(--signal)}
-.tab:disabled{opacity:.3;cursor:not-allowed}   /* 스마트폰: 강의가 중단된 동안에는 다른 메뉴를 누를 수 없음 */
+.tab:disabled{opacity:.3;cursor:not-allowed}   /* 스마트폰: 빙고게임이 중단된 동안에는 다른 메뉴를 누를 수 없음 */
 .tab:focus-visible,.btn:focus-visible,.cell:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
 
 h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-wrap:balance;line-height:1.25;margin:0}
@@ -91,9 +91,10 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 .f .v{min-height:1.6em;border-radius:4px}
 
 /* 눌러서 가운데로 크게 보기(상황파악 5W1H 칸, 위험예지 4라운드 카드) */
-.w5 .f,.rd{cursor:zoom-in}
-.w5 .f:hover{background:var(--olive-soft)}
-.rd:hover{border-color:var(--olive)}
+/* 크게 보기 표시(돋보기 커서·올렸을 때 강조)는 PC 화면에만 적용. 스마트폰에는 크게 보기 기능이 없으므로 이 표시도 없음 */
+:where(body:not(.phone-mode):not(.phone-offline)) .w5 .f,:where(body:not(.phone-mode):not(.phone-offline)) .rd{cursor:zoom-in}
+:where(body:not(.phone-mode):not(.phone-offline)) .w5 .f:hover{background:var(--olive-soft)}
+:where(body:not(.phone-mode):not(.phone-offline)) .rd:hover{border-color:var(--olive)}
 .w5 .f:focus-visible,.rd:focus-visible{outline:3px solid var(--signal);outline-offset:-3px}
 .reveal.zoom{z-index:55}
 .rv-card.zm-card{width:min(1000px,100%);text-align:left;max-height:calc(100dvh - 32px);overflow:auto;gap:18px}
@@ -258,7 +259,7 @@ section.panel{padding-top:28px;display:grid;gap:22px}
 @media (max-width:560px){.lc-row{grid-template-columns:minmax(0,1fr)}}
 .cc-box ul{margin:0;padding-left:1.1em;display:grid;gap:2px;font-size:.92rem}
 @media (max-width:720px){.casecard{grid-template-columns:minmax(0,1fr)}.casecard img{max-height:200px;min-height:0}}
-/* 강의 개설 양식 */
+/* 빙고게임 개설 양식 */
 .lecform{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;background:var(--ground);border-radius:10px;padding:14px}
 .lf{display:grid;gap:5px}
 .lf>span{font-size:.75rem;font-family:var(--mono);letter-spacing:.08em;color:var(--ink2)}
@@ -352,7 +353,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 @media (max-width:520px){.brand{font-size:1.1rem}.qrrow{grid-template-columns:minmax(0,1fr)}.qr{justify-self:center}}
 .role{background:var(--surface);color:var(--ink)}
 .role button{padding:5px 10px;font-size:.8rem}
-.phone-mode .case-pick,.phone-mode .next,.phone-mode #tab-bingo{display:none!important}
+.phone-mode .case-pick,.phone-mode .next,.phone-offline .next,.phone-mode #tab-bingo{display:none!important}
 .phone-mode #tab-team{order:-1}
 .phone-mode .tab{padding:9px 10px 11px}
 .phone-mode .tab .n{display:none}
@@ -419,7 +420,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 
 <header class="top">
   <div class="top-in">
-    <div class="brand">위험예지 빙고게임 <span class="tag">KYT</span> <span class="teambadge" id="teamBadge" hidden></span></div>
+    <div class="brand">위험예지 빙고 훈련 <span class="tag">KYT</span> <span class="teambadge" id="teamBadge" hidden></span></div>
     <div class="case-pick"><label for="caseSel">사례</label><select id="caseSel"></select></div>
   </div>
   <nav class="tabs" role="tablist">
@@ -452,7 +453,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <div class="head">
       <span class="eyebrow">Step 2 · 위험예지 4라운드</span>
       <h1 id="kytTitle"></h1>
-      <p class="lead">현상 파악 → 본질 추구 → 대책 수립 → 행동 목표 설정 순서로 진행합니다. 2라운드에서 고른 본질 위험(◎)이 위험요인 전개도의 핵심원인이 됩니다.</p>
+      <p class="lead">현상 파악 → 본질 추구 → 대책 수립 → 행동 목표 설정 순서로 진행합니다. 2라운드의 본질 위험(◎)이 위험요인 전개도의 핵심원인이 됩니다.</p>
     </div>
     <div class="rounds" id="rounds"></div>
     <button class="btn primary next" data-go="hazmap">위험요인 전개도로 →</button>
@@ -504,7 +505,7 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
 
     <p class="lead" id="bLead" style="margin:0"></p>
     <div class="live" id="livePanel" hidden></div>
-    <details class="live lechist" id="lecHist" hidden><summary>강의 기록 보기·삭제 <button class="btn lh-reload" id="lhReload" type="button">새로 고침</button></summary><div id="lecHistBody" style="display:grid;gap:10px;margin-top:10px"></div></details>
+    <details class="live lechist" id="lecHist" hidden><summary>빙고게임 기록 보기·삭제 <button class="btn lh-reload" id="lhReload" type="button">새로 고침</button></summary><div id="lecHistBody" style="display:grid;gap:10px;margin-top:10px"></div></details>
 
     <div class="picker" id="picker" hidden>
       <div class="head" style="gap:2px"><span class="eyebrow">판 짜기</span><h2 style="font-size:1.35rem">조별 토론으로 빙고판에 넣을 위험요인을 고릅니다</h2>
@@ -549,7 +550,6 @@ dialog::backdrop{background:rgba(10,14,8,.55)}
     <div id="tPick" hidden style="display:grid;gap:14px">
       <div class="tbar"><div style="display:grid;gap:2px"><span class="eyebrow">판 짜기</span><input class="bname" id="tName" aria-label="조 이름"></div><div class="row"><span class="pill" id="tCount"></span><button class="btn ghost" id="tSwitch">조 바꾸기</button></div></div>
       <p class="hint" style="margin:0">훈련 사례는 위쪽 ‘상황파악·위험예지·위험요인 전개도’ 탭에서 볼 수 있습니다. <span class="teamonly">조원끼리 토론해서 정한 </span>위험요인을 아래 목록에서 누르면 판의 빈칸에 들어갑니다. 판의 칸을 눌러 다른 칸으로 끌어다 놓거나 두 칸을 차례로 누르면 자리가 바뀌고, ✕를 누르면 뺍니다.<span class="teamonly"> 여러 명이 동시에 고치면 마지막 입력만 남으니 입력은 한 사람이 맡으세요.</span></p>
-      <div class="row"><button class="btn" data-go2="w5">상황 보기</button><button class="btn" data-go2="kyt">위험예지 보기</button><button class="btn" data-go2="hazmap">위험요인 전개도 보기</button></div>
       <div class="pgrid" id="tGrid"></div>
       <div class="row"><button class="btn" id="tFill">남은 칸 무작위로 채우기</button><button class="btn ghost" id="tClear">전체 비우기</button></div>
       <div class="startbar"><span id="tState"></span><button class="btn primary" id="tDone">입력 완료</button></div>
@@ -2929,10 +2929,12 @@ try{Object.keys(localStorage).forEach(k=>{const x=/^kyt-[a-z]+-bingo-v1(-game|-p
 
 const S={
   ci:0, ti:0, sub:0, tab:"w5", view:3,
-  w5:{}, hazmap:{},   // 스마트폰: 참가한 강의의 사례 내용을 담아 둠
+  w5:{}, hazmap:{},   // 스마트폰: 참가한 게임의 사례 내용을 담아 둠
   cfg:{mode:"team",src:"hazmap",fill:"pick",size:5,teams:4,target:3,weight:false}
 };
 const fixSrc=x=>{if(x&&typeof x.src==="string"&&x.src!=="case")x.src="hazmap";return x};   // 예전에 저장된 문항 방식 값을 지금 이름으로 읽음
+const noZoom=()=>ROLE==="team"||IS_PHONE;
+const zoomAttr=()=>noZoom()?"":` tabindex="0" title="누르면 크게 봅니다"`;
 const caseW5=i=>S.w5[i]||DATA.W5[i];
 const caseHz=i=>S.hazmap[i]||DATA.HZ[i];
 const caseShort=i=>DATA.HZ[i].title.replace(/^사례 \d+:\s*/,"");
@@ -2944,10 +2946,10 @@ const caseLabel=(ci,core)=>`사례 ${ci+1}: ${esc(caseShort(ci))} <span class="c
 const caseSel=$("#caseSel");
 DATA.HZ.forEach((c,i)=>caseSel.insertAdjacentHTML("beforeend",`<option value="${i}">${esc(c.title)}</option>`));
 caseSel.onchange=()=>{if(hasPicks()&&!confirm("사례를 바꾸면 지금 짠 빙고판이 지워집니다. 계속할까요?")){caseSel.value=S.ci;return}S.ci=+caseSel.value;S.ti=0;S.sub=0;renderAll();newGame();
-  if(ROLE!=="team"&&liveActive()&&!liveSame()){if(liveMine())openLiveChoice();else toast(`열린 강의(사례 ${LIVE.ci+1})는 그대로 진행됩니다. 이 사례로 하려면 강의를 새로 개설하세요.`)}};
+  if(ROLE!=="team"&&liveActive()&&!liveSame()){if(liveMine())openLiveChoice();else toast(`열린 게임(사례 ${LIVE.ci+1})은 그대로 진행됩니다. 이 사례로 하려면 빙고게임을 새로 개설하세요.`)}};
 
 /* 탭 */
-function go(t){if(t!=="team"&&teamLocked()){t="team";toast(teamHalted()?"강의가 중단되어 지금은 다른 메뉴를 열 수 없습니다.":"강의가 종료되어 다른 메뉴를 열 수 없습니다.")}S.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===t));
+function go(t){if(t!=="team"&&teamLocked()){t="team";toast(teamHalted()?"빙고게임이 중단되어 지금은 다른 메뉴를 열 수 없습니다.":"빙고게임이 종료되어 다른 메뉴를 열 수 없습니다.")}S.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===t));
   ["w5","kyt","hazmap","bingo","team"].forEach(k=>$("#p-"+k).hidden=k!==t);window.scrollTo({top:0,behavior:"smooth"})}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>go(b.dataset.t));
 const hasPicks=()=>!!(G&&!G.live&&G.boards.some(b=>b.picks.some(Boolean)));
@@ -2960,54 +2962,51 @@ function renderW5(){
   $("#w5Title").textContent=DATA.HZ[S.ci].title;
   const sitEl=$("#w5Sit");sitEl.textContent=w.sit||DATA.R[S.ci].sit;
   const im=$("#w5Img"),src=DATA.IMG&&DATA.IMG[S.ci];im.hidden=!src;if(src){im.src=src;im.alt=`${caseShort(S.ci)} 상황 그림`}
-  $("#w5Grid").innerHTML=W5K.map(([k,ko,en])=>`<div class="f" tabindex="0" title="누르면 크게 봅니다"><div class="k"><b>${ko}</b><i>${en}</i></div><div class="v">${esc(w[k])}</div></div>`).join("");
+  $("#w5Grid").innerHTML=W5K.map(([k,ko,en])=>`<div class="f"${zoomAttr()}><div class="k"><b>${ko}</b><i>${en}</i></div><div class="v">${esc(w[k])}</div></div>`).join("");
 }
 
-/* 강의 진행 중(위험요인 전개도 방식)에는 강의에서 고른 핵심원인(LIVE.ti)만 보입니다. 아니면 -1(잠그지 않음).
-   - 스마트폰: 강의에 들어가 있으면 항상 잠급니다.
-   - 교수 PC: 위쪽 사례가 진행 중인 강의의 사례와 같을 때 잠급니다(다른 사례로 바꾸면 기존 ‘어느 사례로 진행할까요?’ 창이 뜹니다). */
+/* 빙고게임 진행 중(위험요인 전개도 방식)에는 빙고게임에서 고른 핵심원인(LIVE.ti)만 보입니다. 아니면 -1(잠그지 않음).
+   - 스마트폰: 빙고게임에 들어가 있으면 항상 잠급니다.
+   - 교수 PC: 위쪽 사례가 진행 중인 게임의 사례와 같을 때 잠급니다(다른 사례로 바꾸면 기존 ‘어느 사례로 진행할까요?’ 창이 뜹니다). */
 const lockedTi=()=>{
   if(!(LIVE&&LIVE.mcase&&LIVE.src==="hazmap"&&liveActive()))return -1;
   if(ROLE==="team")return LIVE.ti||0;
   return LIVE.ci===S.ci?(LIVE.ti||0):-1;
 };
-/* 스마트폰은 강의에 들어가 있는 동안 위쪽 ‘사례’ 선택을 잠급니다(판은 강의 사례로 만들어지므로 화면만 어긋나는 것을 막음). */
-function applyCaseLock(){caseSel.disabled=ROLE==="team"&&!!(CODE&&LIVE&&liveActive());caseSel.title=caseSel.disabled?"강의 진행 중에는 사례를 바꿀 수 없습니다":""}
+/* 스마트폰은 빙고게임에 들어가 있는 동안 위쪽 ‘사례’ 선택을 잠급니다(판은 빙고게임 사례로 만들어지므로 화면만 어긋나는 것을 막음). */
+function applyCaseLock(){caseSel.disabled=ROLE==="team"&&!!(CODE&&LIVE&&liveActive());caseSel.title=caseSel.disabled?"빙고게임 진행 중에는 사례를 바꿀 수 없습니다":""}
 /* 2. 4라운드 */
 function renderKYT(){
-  const r=DATA.R[S.ci], hz=caseHz(S.ci), lk=lockedTi();
+  const r=DATA.R[S.ci], lk=lockedTi();
   $("#kytTitle").textContent=DATA.HZ[S.ci].title;
   const T=[["1R","현상 파악","어떤 위험이 잠재하고 있는가?"],["2R","본질 추구","이것이 위험의 포인트다!"],["3R","대책 수립","당신이라면 어떻게 하겠는가?"],["4R","행동 목표 설정","우리는 이렇게 한다!"]];
   $("#rounds").innerHTML=T.map((t,i)=>{
     let body;
-    if(i===1){body=r.steps[1].map((s,j)=>lk>=0&&lk!==j?"":`<div class="pt"><strong>${esc(s)}</strong>${hz.coreThemes[j]&&(lk<0||lk===j)?`<div><button class="btn" data-theme="${j}">핵심원인 “${esc(hz.coreThemes[j].name)}” 위험요인 전개도 →</button>${lk===j?` <span class="hint">이번 빙고의 핵심원인</span>`:""}</div>`:""}</div>`).join("")}
+    if(i===1){body=r.steps[1].map((s,j)=>lk>=0&&lk!==j?"":`<div class="pt"><strong>${esc(s)}</strong>${lk===j?`<div><span class="hint">이번 빙고의 핵심원인</span></div>`:""}</div>`).join("")}
     else if(i===3){body=`<ul>${r.steps[3].map(s=>`<li class="chant">${esc(s)}</li>`).join("")}</ul>`}
     else body=`<ul>${r.steps[i].map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`;
-    return `<article class="rd${i===1?" key":""}" tabindex="0" title="누르면 크게 봅니다"><header><span class="rn">${t[0]}</span><h3>${t[1]}</h3></header><div class="q">${t[2]}</div>${body}</article>`}).join("");
+    return `<article class="rd${i===1?" key":""}"${zoomAttr()}><header><span class="rn">${t[0]}</span><h3>${t[1]}</h3></header><div class="q">${t[2]}</div>${body}</article>`}).join("");
 }
-$("#rounds").addEventListener("click",e=>{const b=e.target.closest("[data-theme]");if(!b)return;const lk=lockedTi();S.ti=lk>=0?lk:+b.dataset.theme;S.sub=0;renderHazmap();go("hazmap")});
 
-/* 크게 보기: 상황파악의 5W1H 칸, 위험예지 4라운드 카드를 누르면 그 내용을 화면 가운데에 크게 보여 줌 */
+/* 크게 보기: 상황파악의 5W1H 칸, 위험예지 4라운드 카드를 누르면 그 내용을 화면 가운데에 크게 보여 줌(PC 화면에서만. 스마트폰에서는 쓰지 않음) */
 let zoomFrom=null;
-function openZoom(el){zoomFrom=el;$("#zmBody").innerHTML=el.innerHTML;$("#zoom").hidden=false;$("#zmClose").focus()}
+function openZoom(el){if(noZoom())return;zoomFrom=el;$("#zmBody").innerHTML=el.innerHTML;$("#zoom").hidden=false;$("#zmClose").focus()}
 function closeZoom(){if($("#zoom").hidden)return;$("#zoom").hidden=true;if(zoomFrom&&zoomFrom.isConnected)zoomFrom.focus();zoomFrom=null}
 [["#w5Grid",".f"],["#rounds",".rd"]].forEach(([box,sel])=>{
   $(box).addEventListener("click",e=>{if(e.target.closest("button"))return;const el=e.target.closest(sel);if(el)openZoom(el)});
   $(box).addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches(sel)){e.preventDefault();openZoom(e.target)}});
 });
 $("#zmClose").onclick=closeZoom;
-$("#zoom").addEventListener("click",e=>{if(e.target.id==="zoom"){closeZoom();return}
-  const b=e.target.closest("[data-theme]");if(!b)return;   // 확대 창 안의 ‘위험요인 전개도 →’ 단추도 원래대로 동작
-  closeZoom();const lk=lockedTi();S.ti=lk>=0?lk:+b.dataset.theme;S.sub=0;renderHazmap();go("hazmap")});
+$("#zoom").addEventListener("click",e=>{if(e.target.id==="zoom")closeZoom()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeZoom()});
 
 /* 3. 위험요인 전개도 */
 const colorVar=k=>`var(--c${k%8})`;
 function renderHazmap(){
-  const lk=lockedTi();if(lk>=0)S.ti=lk;   // 스마트폰: 강의에서 고른 핵심원인으로 고정
+  const lk=lockedTi();if(lk>=0)S.ti=lk;   // 스마트폰: 빙고게임에서 고른 핵심원인으로 고정
   const hz=caseHz(S.ci), th=hz.coreThemes[S.ti];
   $("#hzTitle").textContent=DATA.HZ[S.ci].title;
-  $("#themePick").innerHTML=lk>=0?`<span class="btn" aria-pressed="true" style="cursor:default">핵심원인 ${lk+1} · ${esc(th.name)}</span><span class="hint">${ROLE==="team"?"이번 빙고는 이 핵심원인으로 진행합니다.":"강의 진행 중 · 이 핵심원인으로 빙고가 진행됩니다. 바꾸려면 강의를 끝내고 새로 개설하세요."}</span>`
+  $("#themePick").innerHTML=lk>=0?`<span class="btn" aria-pressed="true" style="cursor:default">핵심원인 ${lk+1} · ${esc(th.name)}</span><span class="hint">${ROLE==="team"?"이번 빙고는 이 핵심원인으로 진행합니다.":"빙고게임 진행 중 · 이 핵심원인으로 빙고가 진행됩니다. 바꾸려면 빙고게임을 끝내고 새로 개설하세요."}</span>`
     :hz.coreThemes.map((t,i)=>`<button class="btn" aria-pressed="${i===S.ti}" data-ti="${i}">핵심원인 ${i+1} · ${esc(t.name)}</button>`).join("");
   // 3x3
   const cells=Array(9);
@@ -3223,7 +3222,7 @@ function renderPlay(){
         return `<div class="cell${x.m?" m":""}${x.ln?" ln":""}${fl}" role="button" tabindex="0" data-c="${ci}" aria-pressed="${x.m}">${esc(x.t)}${x.w?`<span class="wt">×${x.w}</span>`:""}</div>`}).join("")}</div></div></div>`}).join("");
   const nm=(G.boards[G.turn]||{}).name||"";
   const over=gameOver(),winNames=G.boards.filter(b=>b.rank).map(b=>b.name);
-  $("#bNow").innerHTML=G.live&&LIVE&&LIVE.phase==="done"?`<em>지난 강의 기록</em> — 호출 ${G.calls.length}번 · 빙고: ${winNames.map(esc).join(", ")||"없음"}`:over?`<em>빙고로 게임이 끝났습니다</em> — 빙고: ${winNames.map(esc).join(", ")||"(다른 판)"}`:G.live&&LIVE.mode==="solo"&&!turnMode(LIVE)?`개인전 · 참가 ${G.boards.length}명 · 차례를 정하는 중입니다.`:`지금 차례: <em>${esc(nm)}</em> — 자기 판에서 위험요인 한 칸을 고르고 대책을 말하세요.`;
+  $("#bNow").innerHTML=G.live&&LIVE&&LIVE.phase==="done"?`<em>지난 빙고게임 기록</em> — 호출 ${G.calls.length}번 · 빙고: ${winNames.map(esc).join(", ")||"없음"}`:over?`<em>빙고로 게임이 끝났습니다</em> — 빙고: ${winNames.map(esc).join(", ")||"(다른 판)"}`:G.live&&LIVE.mode==="solo"&&!turnMode(LIVE)?`개인전 · 참가 ${G.boards.length}명 · 차례를 정하는 중입니다.`:`지금 차례: <em>${esc(nm)}</em> — 자기 판에서 위험요인 한 칸을 고르고 대책을 말하세요.`;
   $("#bUndo").disabled=!G.calls.length;$("#bUndo").hidden=!!(G.live&&LIVE&&LIVE.phase==="done");
   const L=G.last,cc=$("#callCard");
   if(L){const par=parentOf(L.text),nb=new Set(L.hits.map(h=>h[0])).size;
@@ -3276,8 +3275,8 @@ $("#pStart").onclick=()=>{if(G.boards.every(b=>b.picks.every(Boolean)))startPlay
 /* 진행 이벤트 */
 function cellAct(el){
   const bd=el.closest("[data-b]");if(!bd||!G)return;
-  if(G.live&&LIVE&&LIVE.phase==="done"){toast("지난 강의 기록입니다. 호출할 수 없습니다.");return}
-  if(gameOver()&&G.phase==="play"){toast(G.live?"빙고로 게임이 끝났습니다. ‘강의 끝내기’로 결과를 남긴 뒤 ‘새 강의 개설’로 새로 시작하세요.":"빙고로 게임이 끝났습니다. 새로 하려면 ‘새 게임 준비’를 누르세요.");return}
+  if(G.live&&LIVE&&LIVE.phase==="done"){toast("지난 빙고게임 기록입니다. 호출할 수 없습니다.");return}
+  if(gameOver()&&G.phase==="play"){toast(G.live?"빙고로 게임이 끝났습니다. ‘빙고게임 끝내기’로 결과를 남긴 뒤 ‘새 빙고게임 개설’로 새로 시작하세요.":"빙고로 게임이 끝났습니다. 새로 하려면 ‘새 게임 준비’를 누르세요.");return}
   const bi=+bd.dataset.b,ci=+el.dataset.c,b=G.boards[bi],x=b.cells[ci];
   if(G.live){
     if(x.m){toast("이미 호출한 칸입니다.");return}
@@ -3353,7 +3352,7 @@ const byOrder=(a,b)=>((a.no||0)-(b.no||0))||((a.created||0)-(b.created||0));
 const rosterOf=bs=>bs.map(b=>({bid:b.bid,name:b.name,no:b.no||0,kind:b.kind,done:!!b.done,count:(b.picks||[]).filter(Boolean).length,owned:!!b.owner,own:b.owner||"",host:!!b.byHost}));
 function curBoards(){return LIVE?BOARDS.filter(b=>b.sid===LIVE.sid):[]}
 /* 차례: 조별전은 조 번호순, 개인전은 빙고를 시작할 때 정한 이름 가나다순(order=판 bid 목록). 호출·확인·대신 호출은 두 방식이 같은 코드를 씀 */
-const hostOwn=()=>!!LIVE&&(LIVE.hostUid===UID||!!(HOSTINFO.claimed&&HOSTINFO.code===CODE));   // 이 PC가 이 강의의 진행 권한을 가졌는지(호출 처리와 같은 기준)
+const hostOwn=()=>!!LIVE&&(LIVE.hostUid===UID||!!(HOSTINFO.claimed&&HOSTINFO.code===CODE));   // 이 PC가 이 게임의 진행 권한을 가졌는지(호출 처리와 같은 기준)
 const turnMode=L=>!!L&&(L.mode==="team"||Array.isArray(L.order));
 const isTurn=(L,b)=>!!L&&!!b&&(L.mode==="team"?b.no-1===L.turn:(L.order||[])[L.turn]===b.bid);
 const turnLen=L=>L.mode==="team"?L.teams:Math.max(1,(L.order||[]).length);
@@ -3413,7 +3412,7 @@ const API={
     catch(e){return {err:"호출을 보내지 못했습니다. 다시 눌러 주세요."}}
   },
   async apiAdmin(action,p){
-    if(!ADMIN)return {err:"강의 개설과 진행은 PC 화면에서 합니다."};
+    if(!ADMIN)return {err:"빙고게임 개설과 진행은 PC 화면에서 합니다."};
     p=p||{};let Sx=LIVE?clone(LIVE):null;const bs=curBoards();
     try{
       if(action==="start"){
@@ -3423,13 +3422,13 @@ const API={
           ci:+p.ci||0,ti:+p.ti||0,src:p.src==="case"?"case":"hazmap",mcase:p.mcase||null,w5:p.w5||null,turn:0,calls:[],seen:{},results:{},created:Date.now()};
         let pin=HOSTINFO.pin;
         if(fresh){
-          await closeCurrentLecture();   // 스마트폰에는 지금 진행하는 강의 하나만 보이도록 이전 강의는 마감
+          await closeCurrentLecture();   // 스마트폰에는 지금 진행하는 게임 하나만 보이도록 이전 게임은 마감
           let code="";for(let k=0;k<6&&!code;k++){const c=newCode();const ex=await fdb.doc(`lectures/${c}`).get();if(!ex.exists)code=c}
-          if(!code)return {err:"강의를 만들지 못했습니다. 다시 눌러 주세요."};
+          if(!code)return {err:"빙고게임을 만들지 못했습니다. 다시 눌러 주세요."};
           CODE=code;pin=newPin();HOSTINFO={code,pin,title:String(p.title||"").trim().slice(0,40)};saveHost();
           Object.assign(Sx,{code,title:HOSTINFO.title||"위험예지 빙고 훈련",hostUid:UID,open:true,opened:Date.now(),alive:Date.now()});
         }else Object.assign(Sx,{code:CODE,title:LIVE.title,hostUid:LIVE.hostUid,open:true,opened:LIVE.opened||Date.now(),alive:Date.now()});
-        // 강의 기록을 지울 때 쓰도록, 이 강의에서 쓴 판 묶음(sid)을 모두 적어 둠
+        // 빙고게임 기록을 지울 때 쓰도록, 이 게임에서 쓴 판 묶음(sid)을 모두 적어 둠
         Sx.sids=[...new Set([...(!fresh&&LIVE?(LIVE.sids||[LIVE.sid]):[]),Sx.sid].filter(Boolean))];
         const batch=fdb.batch(),list=[];
         if(mode==="team")for(let i=1;i<=teams;i++){const b={bid:"t"+i,sid:Sx.sid,kind:"team",no:i,name:String((p.teamNames||[])[i-1]||"").trim().slice(0,12)||i+"조",owner:null,picks:Array(N).fill(null),w:{},done:false,press:null,created:i};batch.set(bRef(Sx.sid,b.bid),b);list.push(b)}
@@ -3498,7 +3497,7 @@ const API={
       if(action==="release"){await bRef(Sx.sid,p.bid).update({owner:null});return {ok:true}}
       if(action==="end"){Sx.endedPhase=Sx.phase;Sx.phase="done";Sx.open=false;Sx.ended=Date.now();Sx.results=calcR(Sx,bs);await writeS(Sx);return {ok:true}}
       return {err:"알 수 없는 요청입니다."};
-    }catch(e){return {err:e&&e.code==="permission-denied"?"이 PC에는 이 강의의 진행 권한이 없습니다. 강의 기록에서 이 강의를 ‘이어서 진행’으로 불러와 주세요.":"저장하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
+    }catch(e){return {err:e&&e.code==="permission-denied"?"이 PC에는 이 게임의 진행 권한이 없습니다. 빙고게임 기록에서 이 게임을 ‘이어서 진행’으로 불러와 주세요.":"저장하지 못했습니다. 인터넷 연결을 확인해 주세요."}}
   }
 };
 
@@ -3517,7 +3516,7 @@ function hostTick(){
       writeS(S2).finally(()=>hostTick.busy=false);
     }
   }else if(LIVE.phase==="play"&&LIVE.mode==="solo"&&!Array.isArray(LIVE.order)){
-    // 차례 순서가 없는 개인전(이 기능을 넣기 전에 시작한 강의를 이어서 진행): 판을 불러온 뒤 이름 가나다순으로 차례를 정함
+    // 차례 순서가 없는 개인전(이 기능을 넣기 전에 시작한 게임을 이어서 진행): 판을 불러온 뒤 이름 가나다순으로 차례를 정함
     if(bs.some(b=>b.done)){hostTick.busy=true;const S2=clone(LIVE),seen={};bs.forEach(b=>seen[b.bid]=(b.press&&b.press.seq)||0);
       S2.order=soloOrder(bs);S2.turn=0;S2.seen=seen;writeS(S2).finally(()=>hostTick.busy=false)}
   }else if(LIVE.phase==="play"&&!Object.values(LIVE.results||{}).some(r=>r&&r.rank)){
@@ -3557,8 +3556,8 @@ function resubBoards(){
       ()=>{const v=!!P.view;P.bid="";P.sid="";P.view=false;saveP();mineKey="";MINE=null;myBid="";if(v)toast("이 조의 판을 불러오지 못했습니다. 다시 참가해 주세요.");onLive()})}
 }
 /* ── 교수 화면 연결 신호(하트비트) ──
-   교수 PC가 강의를 진행하는 동안 30초마다 신호를 남깁니다. 교수 PC가 꺼지거나 창이 닫혀
-   2분 동안 신호가 없으면 스마트폰은 ‘강의가 중단되었습니다’를 띄우고 입력을 막습니다.
+   교수 PC가 빙고게임을 진행하는 동안 30초마다 신호를 남깁니다. 교수 PC가 꺼지거나 창이 닫혀
+   2분 동안 신호가 없으면 스마트폰은 ‘빙고게임이 중단되었습니다’를 띄우고 입력을 막습니다.
    교수 PC를 다시 열어 ‘이어서 진행’을 고르면(또는 다른 PC에서 이어서 진행하면) 하던 판에서 이어집니다. */
 const HB_MS=window.KYT_HB_MS||30000,HB_DEAD=window.KYT_HB_DEAD||120000,ALIVE_MS=window.KYT_ALIVE_MS||240000,ALIVE_DEAD=window.KYT_ALIVE_DEAD||720000;
 let unsubHB=null,hbSeen=0,hbDown=false,hbLastWrite=0,hbKnown=true,hbHideDown=false;
@@ -3576,11 +3575,11 @@ let hbTickAt=0,hbPend=0;
    - 교수 PC는 신호 간격의 2.5배(조별전 75초, 개인전 150초) 동안 신호가 없으면 ‘접속 끊김’으로 봅니다. */
 const PRES_MS=window.KYT_PRES_MS||30000;
 const presMs=()=>LIVE&&LIVE.mode==="solo"?PRES_MS*2:PRES_MS,presDead=()=>presMs()*2.5;
-const DONE_LOCK_MS=window.KYT_DONE_LOCK_MS||12*3600*1000;   // 스마트폰: 강의가 끝난 뒤 메뉴를 잠가 두는 시간(12시간). 그 뒤에는 다시 열람할 수 있음
+const DONE_LOCK_MS=window.KYT_DONE_LOCK_MS||12*3600*1000;   // 스마트폰: 빙고게임이 끝난 뒤 메뉴를 잠가 두는 시간(12시간). 그 뒤에는 다시 열람할 수 있음
 let PRES={},presStart=0,presLast=0,presSig="",presInit=false,boardsSig="",mineSig="";
 const sansUpd=x=>JSON.stringify(x,(k,v)=>k==="updated"?undefined:v);   // 접속 신호(updated)만 바뀐 것인지 가릴 때 씀
 function presTrack(){const now=Date.now();BOARDS.forEach(b=>{const q=PRES[b.bid],v=b.updated||0,o=b.owner||"";
-  if(!q){PRES[b.bid]={v,o,at:presInit&&o?now:0};return}   // 강의를 띄우며 처음 본 값은 예전 기록일 수 있어 ‘접속’으로 치지 않음(그 뒤 새로 들어온 참가자는 접속으로 봄)
+  if(!q){PRES[b.bid]={v,o,at:presInit&&o?now:0};return}   // 빙고게임을 띄우며 처음 본 값은 예전 기록일 수 있어 ‘접속’으로 치지 않음(그 뒤 새로 들어온 참가자는 접속으로 봄)
   if(v!==q.v||(o&&o!==q.o))q.at=now;if(!o)q.at=0;q.v=v;q.o=o});presInit=true}
 function presState(b){if(!b||!b.owned)return "";const q=PRES[b.bid],now=Date.now(),dead=presDead();
   if(q&&q.at&&now-q.at<dead)return "on";return now-presStart<dead?"chk":"off"}
@@ -3598,7 +3597,7 @@ function presSub(sid){
   let first=true;
   unsubP=fdb.collection(`lectures/${CODE}/sessions/${sid}/pres`).onSnapshot(q=>{const now=Date.now(),ids={};
     q.docs.forEach(d=>{const x=d.data()||{},o=PV[d.id];ids[d.id]=1;
-      const fresh=o?(x.at!==o.v||x.bid!==o.bid||x.role!==o.role):(!first||now-(+x.at||0)<viewDead());   // 강의를 띄우며 처음 본 값은 최근 것일 때만 ‘접속’으로 봄
+      const fresh=o?(x.at!==o.v||x.bid!==o.bid||x.role!==o.role):(!first||now-(+x.at||0)<viewDead());   // 빙고게임을 띄우며 처음 본 값은 최근 것일 때만 ‘접속’으로 봄
       PV[d.id]={bid:x.bid,role:x.role,v:x.at,at:fresh?now:(o?o.at:0)};
       if(fresh&&x.role==="rep"){const p=PRES[x.bid],b=BOARDS.find(k=>k.bid===x.bid);if(p&&b&&b.owner===d.id)p.at=now}});
     Object.keys(PV).forEach(k=>{if(!ids[k])delete PV[k]});first=false},()=>{});
@@ -3611,7 +3610,7 @@ function presPing(){
   const now=Date.now();if(now-presLast<(view?presMs()*2:presMs()))return;presLast=now;
   if(LIVE.mode==="team"&&!presLegacy){
     pRef(LIVE.sid).set({bid:myBid,role:view?"view":"rep",at:now}).then(()=>{presDeny=0}).catch(e=>{
-      // 강의가 끝나는 순간처럼 한 번만 거절되는 경우가 있어, 진행 중에 두 번 연달아 거절될 때만 예전 방식(보안 규칙을 새로 게시하지 않은 경우)으로 바꿈
+      // 빙고게임이 끝나는 순간처럼 한 번만 거절되는 경우가 있어, 진행 중에 두 번 연달아 거절될 때만 예전 방식(보안 규칙을 새로 게시하지 않은 경우)으로 바꿈
       if(e&&e.code==="permission-denied"&&liveActive()&&++presDeny>=2){presLegacy=true;presLast=0}});return}
   if(view)return;
   // 판 짜기 중에는 판 저장과 같은 모양으로 저장된 내용을 그대로 다시 적고(바뀌는 것은 시각뿐), 빙고 진행 중에는 시각만 적음
@@ -3621,13 +3620,13 @@ function presPing(){
 let RESUME_HOLD="";
 const resumeHeld=()=>!!RESUME_HOLD&&RESUME_HOLD===CODE;
 function releaseHold(beat){const h=resumeHeld();RESUME_HOLD="";hbPend=0;hbTickAt=Date.now();if(h&&beat){presStart=Date.now();hostBeat(true)}}
-/* 교수 PC: 강의 도중 연결이 2분 넘게 끊겼다가 돌아온 경우 → 확인 창을 띄우고, 고를 때까지 신호·진행을 보류 */
+/* 교수 PC: 빙고게임 도중 연결이 2분 넘게 끊겼다가 돌아온 경우 → 확인 창을 띄우고, 고를 때까지 신호·진행을 보류 */
 function hostInterrupted(){hbPend=0;hbTickAt=Date.now();
   if(resumeHeld()||!liveActive()||!liveMine())return;
   RESUME_HOLD=CODE;openResumeChoice("gap")}
-/* 스마트폰: 강의가 중단된 상태(교수 화면 신호가 끊겼거나, 교수님이 아직 ‘이어서 진행’을 고르지 않음) */
+/* 스마트폰: 빙고게임이 중단된 상태(교수 화면 신호가 끊겼거나, 교수님이 아직 ‘이어서 진행’을 고르지 않음) */
 function teamHalted(){return ROLE==="team"&&!!CODE&&!!LIVE&&liveActive()&&hbDown}
-/* 스마트폰: 강의가 중단되었거나 종료된 상태(메뉴 잠금). 종료 잠금은 종료 뒤 12시간 동안만 */
+/* 스마트폰: 빙고게임이 중단되었거나 종료된 상태(메뉴 잠금). 종료 잠금은 종료 뒤 12시간 동안만 */
 function teamLocked(){return teamHalted()||(ROLE==="team"&&!!CODE&&!!LIVE&&LIVE.phase==="done"&&(!LIVE.ended||Date.now()-LIVE.ended<DONE_LOCK_MS))}
 /* 스마트폰: 중단·종료된 동안에는 상황파악·위험예지·위험요인 전개도 메뉴를 막고 ‘우리 조 빙고’ 화면에 고정 */
 function applyHalt(){const h=teamLocked();
@@ -3643,7 +3642,7 @@ function hostBeat(force){
   if(!force&&now-hbLastWrite<HB_MS-500)return;
   hbLastWrite=now;if(!hbPend)hbPend=now;
   hbRef().set({at:now,sid:LIVE.sid}).then(()=>{hbPend=0}).catch(()=>{hbLastWrite=0});
-  // 스마트폰 강의 목록에서 ‘지금 진행 중’인지 가릴 수 있도록 강의 문서에도 가끔(4분마다) 표시
+  // 스마트폰 빙고게임 목록에서 ‘지금 진행 중’인지 가릴 수 있도록 빙고게임 문서에도 가끔(4분마다) 표시
   if(now-(LIVE.alive||0)>ALIVE_MS){LIVE.alive=now;sRef().update({alive:now}).catch(()=>{})}
 }
 document.addEventListener("visibilitychange",()=>{
@@ -3670,14 +3669,14 @@ setInterval(()=>{hostBeat(false);hbTickAt=Date.now();
   if(ROLE==="host"&&ADMIN&&LIVE&&liveActive()&&S.cfg.fill==="phone"){const sg=presSigNow();if(sg!==presSig){presSig=sg;renderBingo()}
     if(LIVE.mode==="team"){const og=LIST.map(b=>presState(b)==="off"?1:0).join("");if(og!==scheduleRoster.og){scheduleRoster.og=og;scheduleRoster()}}}
 },Math.min(5000,HB_MS));
-/* 이 PC가 진행하던 강의를 마감(이어서 진행할 수 있도록 단계는 기억) */
+/* 이 PC가 진행하던 게임을 마감(이어서 진행할 수 있도록 단계는 기억) */
 async function closeCurrentLecture(){
   if(!fdb||!CODE||!LIVE||!liveActive())return;
   if(LIVE.hostUid!==UID&&!(HOSTINFO.claimed&&HOSTINFO.code===CODE))return;
   try{await sRef().update({endedPhase:LIVE.phase,phase:"done",open:false,ended:Date.now(),results:calcR(LIVE,curBoards())})}catch(e){}
 }
-/* 교수 PC를 열 때: 이 PC가 예전에 열어 두고 마감하지 않은 강의(지금 이어 가는 강의 제외)는 마감해
-   스마트폰 강의 목록에 남지 않게 함. 강의 기록에서 이어서 진행할 수 있음. */
+/* 교수 PC를 열 때: 이 PC가 예전에 열어 두고 마감하지 않은 게임(지금 이어 가는 게임 제외)은 마감해
+   스마트폰 빙고게임 목록에 남지 않게 함. 빙고게임 기록에서 이어서 진행할 수 있음. */
 async function closeStaleMine(){
   try{const q=await fdb.collection("lectures").where("hostUid","==",UID).get();
     for(const d of q.docs){const x=d.data();if(!x||!x.open||x.code===HOSTINFO.code)continue;
@@ -3690,15 +3689,15 @@ function subscribeBase(){
   LIVE=null;LIST=[];BOARDS=[];ROSTER=null;if(unsubB){unsubB();unsubB=null;boardsSid=null}
   if(!CODE){onLive();return}
   unsubS=sRef().onSnapshot(s=>{const wasLoaded=LIVE_LOADED,wasActive=liveActive();LIVE=s.exists?fixSrc(s.data()):null;LIVE_LOADED=true;if(ADMIN)hostBeat(true);
-    // 스마트폰: 마감됐던 강의를 교수님이 다시 열면(마감 → 진행) 그 순간 교수 화면이 살아 있는 것이므로 중단 표시를 풉니다.
+    // 스마트폰: 마감됐던 게임을 교수님이 다시 열면(마감 → 진행) 그 순간 교수 화면이 살아 있는 것이므로 중단 표시를 풉니다.
     if(ROLE==="team"&&wasLoaded&&!wasActive&&liveActive()){hbSeen=Date.now();hbDown=false}
     if(ROLE==="team"&&LIVE&&liveActive()&&!liveNow(LIVE)&&!hbDown&&Date.now()-hbSeen<HB_MS){hbSeen=0;hbDown=true}
-    // 교수 PC: 강의 기록이 (다른 PC에서) 삭제되면 강의 개설 화면으로 돌아감
-    if(!LIVE&&ADMIN&&ROLE==="host"&&CODE){const c=CODE;if(HOSTINFO.code===c){HOSTINFO={};saveHost()}G=null;toast("진행하던 강의의 기록이 삭제되었습니다.");setCode("");return}syncList();resubBoards();onLive();hostTick();askLiveChoice()},fsErr);
+    // 교수 PC: 빙고게임 기록이 (다른 PC에서) 삭제되면 빙고게임 개설 화면으로 돌아감
+    if(!LIVE&&ADMIN&&ROLE==="host"&&CODE){const c=CODE;if(HOSTINFO.code===c){HOSTINFO={};saveHost()}G=null;toast("진행하던 게임의 기록이 삭제되었습니다.");setCode("");return}syncList();resubBoards();onLive();hostTick();askLiveChoice()},fsErr);
   unsubR=rRef().onSnapshot(s=>{ROSTER=s.exists?s.data():null;if(syncList())onLive()},()=>{});
   // 스마트폰은 교수 화면 신호를 지켜봄(처음 받은 값은 예전 신호일 수 있어, 바뀔 때만 ‘살아 있음’으로 봄)
   /* - hold 표시: 교수 PC가 닫히는 중이거나, 다시 열렸지만 아직 ‘이어서 진행’을 고르지 않은 상태 → 중단
-     - 처음 받은 값: 2분 안에 남긴 신호일 때만 ‘살아 있음’으로 봅니다(중단된 강의에 새로 들어온 스마트폰이 입력하지 못하도록).
+     - 처음 받은 값: 2분 안에 남긴 신호일 때만 ‘살아 있음’으로 봅니다(중단된 빙고게임에 새로 들어온 스마트폰이 입력하지 못하도록).
        그보다 오래된 신호면 중단으로 두고, 신호가 새로 바뀔 때(최대 30초) 풀립니다. */
   if(ROLE==="team"){let first=true;unsubHB=hbRef().onSnapshot(s=>{
       const d=s.exists?s.data():null,was1=first,now=Date.now(),at=+(d&&d.at)||0;first=false;hbKnown=true;hbAt=at;
@@ -3721,11 +3720,11 @@ function subscribeBase(){
 let LIVE_LOADED=false,ROSTER=null;
 function syncList(){if(ROLE==="team"||!ADMIN){LIST=ROSTER&&LIVE&&ROSTER.sid===LIVE.sid?(ROSTER.list||[]):[];return true}return false}
 function setCode(c){CODE=c||"";LIVE_LOADED=false;ctxSid=null;subscribeBase()}
-// 지금 진행 중인 강의: 열려 있고, 마감되지 않았고, 교수 PC가 최근(12분 안)에 살아 있음을 남긴 강의
+// 지금 진행 중인 게임: 열려 있고, 마감되지 않았고, 교수 PC가 최근(12분 안)에 살아 있음을 남긴 빙고게임
 const liveNow=x=>!!(x&&x.open&&x.phase!=="done"&&Date.now()-(x.alive||0)<ALIVE_DEAD);
 
 function rpc(fn,...args){
-  if(fn!=="apiAdmin"&&teamHalted())return Promise.resolve({err:"강의가 중단되어 지금은 입력할 수 없습니다."});
+  if(fn!=="apiAdmin"&&teamHalted())return Promise.resolve({err:"빙고게임이 중단되어 지금은 입력할 수 없습니다."});
   if(fn!=="apiAdmin"&&ROLE==="team"&&hbVerify&&liveActive())return Promise.resolve({err:"교수님 화면과 연결을 확인하는 중입니다. 잠시 뒤 다시 해 주세요."});   // 스마트폰: 중단 중에는 참가·판 저장·호출을 보내지 않음
   return API[fn](...args)}
 const liveActive=()=>!!(LIVE&&LIVE.sid&&(LIVE.phase==="pick"||LIVE.phase==="play"));
@@ -3761,19 +3760,19 @@ async function adm(action,p){
 }
 async function hostStartLive(fresh){
   if(!FB||!ADMIN)return;
-  /* 빙고를 마친(순위가 난) 강의는 결과만 봅니다. ‘다시 시작’으로 호출 기록·순위를 지우지 않도록 막습니다. */
-  if(!fresh&&(HOSTREV||(LIVE&&lecDone(LIVE)))){toast("빙고가 난 강의는 다시 시작할 수 없습니다. ‘강의 끝내기’로 결과를 남긴 뒤 ‘새 강의 개설’을 눌러 주세요.");return}
+  /* 빙고를 마친(순위가 난) 게임은 결과만 봅니다. ‘다시 시작’으로 호출 기록·순위를 지우지 않도록 막습니다. */
+  if(!fresh&&(HOSTREV||(LIVE&&lecDone(LIVE)))){toast("빙고가 난 게임은 다시 시작할 수 없습니다. ‘빙고게임 끝내기’로 결과를 남긴 뒤 ‘새 빙고게임 개설’을 눌러 주세요.");return}
   HOSTREV="";
-  if((liveActive()||(LIVE&&LIVE.phase==="done"))&&!confirm(fresh?"진행 중인 강의를 마감하고 새 강의를 개설할까요?\n(마감한 강의는 강의 기록에서 이어서 진행할 수 있습니다.)":"이 강의의 판을 모두 지우고 같은 QR 코드로 다시 시작할까요?"))return;
+  if((liveActive()||(LIVE&&LIVE.phase==="done"))&&!confirm(fresh?"진행 중인 게임을 마감하고 새 게임을 개설할까요?\n(마감한 게임은 빙고게임 기록에서 이어서 진행할 수 있습니다.)":"이 게임의 판을 모두 지우고 같은 QR 코드로 다시 시작할까요?"))return;
   const c=S.cfg,D=lecDraft();let title=D.title,teams=D.teams,teamNames=D.names.slice(0,D.teams).map(x=>String(x||"").trim().slice(0,12));
   if(!fresh&&LIVE){title=LIVE.title;teams=LIVE.teams;teamNames=curBoards().filter(b=>b.kind==="team").sort(byOrder).map(b=>b.name)}
-  if(fresh&&!String(title).trim()){toast("강의 이름을 입력해 주세요.");const t=$("#lvTitle");if(t)t.focus();return}
+  if(fresh&&!String(title).trim()){toast("빙고게임 이름을 입력해 주세요.");const t=$("#lvTitle");if(t)t.focus();return}
   $("#livePanel").querySelectorAll("button").forEach(b=>b.disabled=true);
   const r=await adm("start",{fresh:!!fresh,title,teamNames,ci:S.ci,ti:S.ti,src:c.src,mode:c.mode,size:c.size,teams,target:c.target,weight:false,mcase:clone(caseHz(S.ci)),w5:clone(caseW5(S.ci))});
-  if(r){revealCount=-1;bingoSeen=-1;G=null;toast(fresh?"강의를 개설했습니다. 참가자에게 QR 코드를 보여 주세요.":"같은 강의에서 다시 시작했습니다.")}
+  if(r){revealCount=-1;bingoSeen=-1;G=null;toast(fresh?"빙고게임을 개설했습니다. 참가자에게 QR 코드를 보여 주세요.":"같은 빙고게임에서 다시 시작했습니다.")}
   renderBingo();
 }
-/* 강의 개설 입력값(화면이 다시 그려져도 유지) */
+/* 빙고게임 개설 입력값(화면이 다시 그려져도 유지) */
 let LECDRAFT=null;
 function lecDraft(){if(!LECDRAFT)LECDRAFT={title:"",teams:Math.max(2,Math.min(10,S.cfg.teams||4)),names:[]};return LECDRAFT}
 $("#livePanel").addEventListener("input",e=>{const D=lecDraft();
@@ -3796,30 +3795,30 @@ function qrSvg(url){try{const q=qrcode(0,"M");q.addData(url);q.make();return q.c
 function renderLiveHost(){
   const P_=$("#livePanel");
   if(!FB){P_.innerHTML=`<h2>스마트폰 입력</h2><p class="hint" style="margin:0">스마트폰 입력은 Firebase 설정(firebase-config.js)을 넣고 웹에 올린 주소에서만 쓸 수 있습니다(설치 안내 참고). 이 파일만으로는 ‘한 화면에서 고르기’를 쓰세요.</p>`;return}
-  if(!ADMIN){P_.innerHTML=`<p class="hint" style="margin:0">강의 개설과 진행은 PC 화면에서 합니다.</p>`;return}
+  if(!ADMIN){P_.innerHTML=`<p class="hint" style="margin:0">빙고게임 개설과 진행은 PC 화면에서 합니다.</p>`;return}
   const L=LIVE,c=S.cfg;
   if(!liveActive()){
     const rv=!!(L&&L.phase==="done"&&HOSTREV===CODE),last=CODE&&LIVE&&!rv,D=lecDraft();
-    const revHtml=rv?`<div class="revhead"><span class="eyebrow">지난 강의 결과 보기 · 이 교수 화면에서만 보입니다</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2>
+    const revHtml=rv?`<div class="revhead"><span class="eyebrow">지난 게임 결과 보기 · 이 교수 화면에서만 보입니다</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2>
       <div class="case-label">${caseLabel(L.ci,L.src==="hazmap"&&L.mcase?(L.mcase.coreThemes[L.ti]||{}).name:"")}</div>
       <span class="hint">개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 호출 ${(L.calls||[]).length}번. 아래 빙고판과 호출 기록을 보며 설명할 수 있습니다.</span>
-      <div class="row"><button class="btn primary" id="lvRevClose">결과 보기 닫기</button><button class="btn" id="lvRestart" disabled title="빙고를 마친 강의는 결과만 볼 수 있습니다">이 강의에서 다시 시작</button></div>
-      <p class="hint" style="margin:0">빙고를 마친 강의는 결과만 볼 수 있습니다. 새 강의를 열려면 ‘결과 보기 닫기’를 누른 뒤 강의 개설 칸을 쓰세요.</p></div>`:"";
-    /* 결과 보기 중에는 강의 개설 칸을 숨깁니다(‘결과 보기 닫기’를 누르면 다시 나타납니다). */
+      <div class="row"><button class="btn primary" id="lvRevClose">결과 보기 닫기</button><button class="btn" id="lvRestart" disabled title="빙고를 마친 게임은 결과만 볼 수 있습니다">이 게임에서 다시 시작</button></div>
+      <p class="hint" style="margin:0">빙고를 마친 게임은 결과만 볼 수 있습니다. 새 게임을 열려면 ‘결과 보기 닫기’를 누른 뒤 빙고게임 개설 칸을 쓰세요.</p></div>`:"";
+    /* 결과 보기 중에는 빙고게임 개설 칸을 숨깁니다(‘결과 보기 닫기’를 누르면 다시 나타납니다). */
     if(rv){P_.innerHTML=revHtml;return}
-    P_.innerHTML=`<div><span class="eyebrow">강의 개설</span><h2>강의를 개설하면 참가용 QR 코드가 만들어집니다</h2></div>
+    P_.innerHTML=`<div><span class="eyebrow">빙고게임 개설</span><h2>빙고게임을 개설하면 참가용 QR 코드가 만들어집니다</h2></div>
       <ol class="steps"><li>위에서 사례·핵심원인(위험요인 전개도 탭)과 진행 방식(조별전: 조마다 대표폰 1대와 참여폰 / 개인전: 1인 1대), 판 크기, 목표 줄 수를 정합니다.</li>
-      <li>아래에 강의 이름과 조(조별전일 때)를 넣고 ‘강의 개설’을 누르면 QR 코드가 나타납니다. 로그인은 필요 없습니다.</li>
-      <li>교육생은 QR 코드를 찍으면 이 강의로 바로 들어와 우리 조(또는 이름)를 고르고, 상황·위험예지·위험요인 전개도를 보며 판을 채웁니다.</li>
+      <li>아래에 빙고게임 이름과 조(조별전일 때)를 넣고 ‘빙고게임 개설’을 누르면 QR 코드가 나타납니다. 로그인은 필요 없습니다.</li>
+      <li>교육생은 QR 코드를 찍으면 이 게임으로 바로 들어와 우리 조(또는 이름)를 고르고, 상황·위험예지·위험요인 전개도를 보며 판을 채웁니다.</li>
       <li>조별전은 모든 조가 입력을 마치면 자동으로, 개인전은 ‘빙고 시작’을 누르면 시작합니다. 호출한 위험요인은 이 화면에 크게 나타납니다.</li></ol>
       <div class="lecform">
-        <label class="lf"><span>강의 이름</span><input id="lvTitle" type="text" maxlength="40" placeholder="예: 육군 휴먼에러 교육" value="${esc(D.title)}"></label>
+        <label class="lf"><span>빙고게임 이름</span><input id="lvTitle" type="text" maxlength="40" placeholder="예: 육군 휴먼에러 교육" value="${esc(D.title)}"></label>
         ${c.mode==="team"?`<label class="lf" style="max-width:160px"><span>조 수</span><select id="lvTeams">${Array.from({length:9},(_,i)=>`<option value="${i+2}" ${D.teams===i+2?"selected":""}>${i+2}개 조</option>`).join("")}</select></label>
         <div class="lf" style="grid-column:1/-1"><span>조 이름(비워 두면 ‘1조, 2조…’)</span><div class="tnames" id="lvNames">${Array.from({length:D.teams},(_,i)=>`<input data-tn="${i}" type="text" maxlength="12" placeholder="${i+1}조" value="${esc(D.names[i]||"")}" aria-label="${i+1}번째 조 이름">`).join("")}</div></div>`:`<p class="hint" style="grid-column:1/-1;margin:0">개인전은 교육생이 참가할 때 자기 이름을 입력합니다.</p>`}
-        <div style="grid-column:1/-1" class="row"><button class="btn primary" id="lvNew">강의 개설</button><span class="hint">사례 ${S.ci+1}: ${esc(caseShort(S.ci))} · ${c.src==="hazmap"?`핵심원인: ${esc(caseHz(S.ci).coreThemes[S.ti].name)}`:"사례 빙고 문항"} · ${c.mode==="team"?`조별전 ${D.teams}개 조`:"개인전"} · ${c.size}×${c.size} · 목표 ${c.target}줄</span></div>
+        <div style="grid-column:1/-1" class="row"><button class="btn primary" id="lvNew">빙고게임 개설</button><span class="hint">사례 ${S.ci+1}: ${esc(caseShort(S.ci))} · ${c.src==="hazmap"?`핵심원인: ${esc(caseHz(S.ci).coreThemes[S.ti].name)}`:"사례 빙고 문항"} · ${c.mode==="team"?`조별전 ${D.teams}개 조`:"개인전"} · ${c.size}×${c.size} · 목표 ${c.target}줄</span></div>
       </div>
-      ${last?(lecDone(L)?`<p class="hint" style="margin:0">지난 강의는 빙고를 마쳤습니다. 결과만 볼 수 있으며 같은 QR 코드로 다시 시작할 수 없습니다. <button class="btn" id="lvRestart" disabled title="빙고를 마친 강의는 결과만 볼 수 있습니다">이 강의에서 다시 시작</button></p>`
-        :`<p class="hint" style="margin:0">지난 강의는 빙고를 마치지 못하고 끝났습니다. 하던 판 그대로 이어가려면 <button class="btn" id="lvResume">이어서 진행</button> <span class="hint">(판과 호출 기록이 지워지지 않습니다)</span></p>`):""}
+      ${last?(lecDone(L)?`<p class="hint" style="margin:0">지난 게임은 빙고를 마쳤습니다. 결과만 볼 수 있으며 같은 QR 코드로 다시 시작할 수 없습니다. <button class="btn" id="lvRestart" disabled title="빙고를 마친 게임은 결과만 볼 수 있습니다">이 게임에서 다시 시작</button></p>`
+        :`<p class="hint" style="margin:0">지난 게임은 빙고를 마치지 못하고 끝났습니다. 하던 판 그대로 이어가려면 <button class="btn" id="lvResume">이어서 진행</button> <span class="hint">(판과 호출 기록이 지워지지 않습니다)</span></p>`):""}
       `;
     return;
   }
@@ -3827,8 +3826,8 @@ function renderLiveHost(){
   const done=LIST.filter(b=>b.done).length;
   const qr=qrSvg(joinUrl());
   const mine=L.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE;
-  const head=`<div class="tbar"><div><span class="eyebrow">${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · ${L.mode==="team"?"조별전":"개인전"}${HOSTINFO.code===CODE&&HOSTINFO.pin?` · 진행자 PIN ${esc(HOSTINFO.pin)}`:""}</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2><div class="case-label">${caseLabel(L.ci,L.src==="hazmap"&&th?th.name:"")}</div>${mine?"":`<span class="hint">⚠ 이 PC에는 진행 권한이 없습니다. 강의 기록에서 이 강의를 ‘이어서 진행’으로 불러와 주세요.</span>`}</div>
-    <div class="row"><span class="hint">설정을 바꾸려면 ‘강의 끝내기’ 뒤 새로 여세요.</span><button class="btn" id="lvRestart" ${lecDone(L)?'disabled title="빙고가 난 강의는 다시 시작할 수 없습니다. 강의를 끝내고 새 강의를 개설하세요."':""}>이 강의에서 다시 시작</button><button class="btn" id="lvNew">새 강의 개설</button><button class="btn ghost" id="lvEnd">강의 끝내기</button></div></div>`;
+  const head=`<div class="tbar"><div><span class="eyebrow">${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · ${L.mode==="team"?"조별전":"개인전"}${HOSTINFO.code===CODE&&HOSTINFO.pin?` · 진행자 PIN ${esc(HOSTINFO.pin)}`:""}</span><h2>${esc(L.title||"위험예지 빙고 훈련")}</h2><div class="case-label">${caseLabel(L.ci,L.src==="hazmap"&&th?th.name:"")}</div>${mine?"":`<span class="hint">⚠ 이 PC에는 진행 권한이 없습니다. 빙고게임 기록에서 이 게임을 ‘이어서 진행’으로 불러와 주세요.</span>`}</div>
+    <div class="row"><span class="hint">설정을 바꾸려면 ‘빙고게임 끝내기’ 뒤 새로 여세요.</span><button class="btn" id="lvRestart" ${lecDone(L)?'disabled title="빙고가 난 게임은 다시 시작할 수 없습니다. 빙고게임을 끝내고 새 게임을 개설하세요."':""}>이 게임에서 다시 시작</button><button class="btn" id="lvNew">새 빙고게임 개설</button><button class="btn ghost" id="lvEnd">빙고게임 끝내기</button></div></div>`;
   const qrBox=`<div class="qrrow"><button class="qr" id="lvQr" aria-label="QR 코드 크게 보기">${qr}</button><div style="display:grid;gap:6px;min-width:0"><b>QR 코드를 찍어 참가하세요</b><span class="hint">${L.mode==="team"?"조원 모두 각자 스마트폰으로 참가해 조를 고릅니다. 조원 모두 함께 판을 채우고, 조마다 1대인 대표폰이 ‘입력 완료’와 호출을 맡습니다.":"각자 스마트폰으로 참가해 이름을 입력합니다."}</span><div class="row"><button class="btn" id="lvQrBig">QR 크게 보기</button></div></div></div>`;
   if(L.phase==="pick"){
     presSig=presSigNow();
@@ -3859,40 +3858,40 @@ $("#livePanel").addEventListener("click",e=>{
   if(b.id==="lvNew")hostStartLive(true);
   if(b.id==="lvNoDevFill")fillNoDevice();
   if(b.id==="lvRestart")hostStartLive(false);
-  if(b.id==="lvResume"&&LIVE)openLecture({...LIVE,code:CODE},true);   // 빙고를 못 마치고 끝낸 강의를 하던 단계부터 다시 엶(판 유지)
+  if(b.id==="lvResume"&&LIVE)openLecture({...LIVE,code:CODE},true);   // 빙고를 못 마치고 끝낸 게임을 하던 단계부터 다시 엶(판 유지)
   if(b.id==="lvPlay")adm("play");
   if(b.id==="lvLock"&&LIVE)adm("lock",{on:!LIVE.lock});
   if(b.id==="lvRevClose")reviewClose();
-  if(b.id==="lvEnd"&&confirm("강의를 끝낼까요? 참가자 화면도 종료되고, 강의 목록에서 사라집니다.")){adm("end");G=null}
+  if(b.id==="lvEnd"&&confirm("빙고게임을 끝낼까요? 참가자 화면도 종료되고, 빙고게임 목록에서 사라집니다.")){adm("end");G=null}
   if(b.id==="lvQr"||b.id==="lvQrBig")showQrBig();
 });
 function showQrBig(){$("#qrBigImg").innerHTML=qrSvg(joinUrl());$("#qrBig").hidden=false;$("#qrBigClose").focus()}
 $("#qrBigClose").onclick=()=>$("#qrBig").hidden=true;
 $("#qrBig").addEventListener("click",e=>{if(e.target.id==="qrBig")$("#qrBig").hidden=true});
 
-/* ── 강의 기록 보기·삭제 ── */
+/* ── 빙고게임 기록 보기·삭제 ── */
 let HIST=[],histBusy=false;
 const fmtDT=ms=>{if(!ms)return "-";const d=new Date(ms),z=n=>String(n).padStart(2,"0");return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`};
 const lecDone=L=>Object.values(L.results||{}).some(r=>r&&r.rank);
-let HOSTREV="";   // 교수 PC에서만 결과를 보고 있는 지난 강의 코드
+let HOSTREV="";   // 교수 PC에서만 결과를 보고 있는 지난 게임 코드
 const lecMine=L=>L.hostUid===UID||(HOSTINFO.claimed&&HOSTINFO.code===L.code);
 async function loadHist(){
-  if(!fdb||histBusy)return;histBusy=true;$("#lecHistBody").innerHTML=`<span class="hint">강의 기록을 불러오는 중입니다…</span>`;
+  if(!fdb||histBusy)return;histBusy=true;$("#lecHistBody").innerHTML=`<span class="hint">빙고게임 기록을 불러오는 중입니다…</span>`;
   try{const q=await fdb.collection("lectures").get();HIST=q.docs.map(d=>fixSrc(d.data())).filter(x=>x&&x.code).sort((a,b)=>(b.opened||0)-(a.opened||0))}
-  catch(e){HIST=[];toast("강의 기록을 불러오지 못했습니다.")}
+  catch(e){HIST=[];toast("빙고게임 기록을 불러오지 못했습니다.")}
   histBusy=false;renderHist();
 }
 function renderHist(){
   const rows=HIST;
-  $("#lecHistBody").innerHTML=`<p class="hint" style="margin:0">Firestore에 저장된 강의 목록입니다. 강의 기록은 어느 PC에서든 마스터 PIN을 넣어야 삭제됩니다. 삭제하면 판·호출 기록까지 모두 지워지며 되돌릴 수 없습니다.</p>
+  $("#lecHistBody").innerHTML=`<p class="hint" style="margin:0">Firestore에 저장된 빙고게임 목록입니다. 빙고게임 기록은 어느 PC에서든 마스터 PIN을 넣어야 삭제됩니다. 삭제하면 판·호출 기록까지 모두 지워지며 되돌릴 수 없습니다.</p>
     <div class="lh-list">${rows.map(L=>{const res=L.results||{},wins=Object.keys(res).filter(k=>res[k]&&res[k].rank).length;
       if(L.deleting)return `<div class="lh-row" data-code="${esc(L.code)}"><div class="lh-top"><b>${esc(L.title||"위험예지 빙고 훈련")} <span class="lh-badge">삭제가 끝나지 않음</span></b>
         <span class="row"><button class="btn primary" data-lhdel="${esc(L.code)}">다시 삭제</button></span></div>
         <div class="lh-meta">${fmtDT(L.deleting)}에 삭제를 시작했지만 끝나지 않았습니다. 기록 일부가 이미 지워졌을 수 있어 열어 볼 수 없습니다. ‘다시 삭제’를 눌러 마저 지워 주세요.</div></div>`;
       return `<div class="lh-row${L.open?" open":""}" data-code="${esc(L.code)}"><div class="lh-top"><b>${esc(L.title||"위험예지 빙고 훈련")} <span class="lh-badge">${L.open?"진행 중":lecDone(L)?"끝남 · 빙고 완료":"끝남 · 빙고 미완료"}</span></b>
         <span class="row"><button class="btn" data-lhview="${esc(L.code)}">자세히</button><button class="btn" data-lhload="${esc(L.code)}">${L.phase==="done"?(lecDone(L)?"결과 보기":"이어서 진행"):"이 PC에서 진행"}</button><button class="btn ghost" data-lhdel="${esc(L.code)}">삭제</button></span></div>
-        <div class="lh-meta">개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 사례 ${(L.ci||0)+1}: ${esc(caseShort(L.ci||0))} · ${L.src==="hazmap"&&L.mcase?`핵심원인: ${esc((L.mcase.coreThemes[L.ti]||{}).name||"")}`:"사례 빙고 문항"} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 호출 ${(L.calls||[]).length}번 · 빙고 ${wins?`${wins}${L.mode==="team"?"개 조":"명"}`:"없음"}${lecMine(L)?"":" · 다른 PC에서 연 강의"}</div>
-        <div class="lh-detail" hidden></div></div>`}).join("")||`<span class="hint">저장된 강의가 없습니다.</span>`}</div>`;
+        <div class="lh-meta">개설 ${fmtDT(L.opened)}${L.ended?` · 종료 ${fmtDT(L.ended)}`:""} · 사례 ${(L.ci||0)+1}: ${esc(caseShort(L.ci||0))} · ${L.src==="hazmap"&&L.mcase?`핵심원인: ${esc((L.mcase.coreThemes[L.ti]||{}).name||"")}`:"사례 빙고 문항"} · ${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 호출 ${(L.calls||[]).length}번 · 빙고 ${wins?`${wins}${L.mode==="team"?"개 조":"명"}`:"없음"}${lecMine(L)?"":" · 다른 PC에서 연 게임"}</div>
+        <div class="lh-detail" hidden></div></div>`}).join("")||`<span class="hint">저장된 게임이 없습니다.</span>`}</div>`;
 }
 async function showHistDetail(code,box){
   const L=HIST.find(x=>x.code===code);if(!L||L.deleting)return;
@@ -3904,12 +3903,12 @@ async function showHistDetail(code,box){
   box.hidden=false;
 }
 /* PIN 입력 대화창: 입력한 글자는 ●로 가려서 보입니다. 취소하면 빈 문자열을 돌려줍니다.
-   kind가 "master"이면 마스터 PIN만 묻습니다(강의 기록 삭제). */
+   kind가 "master"이면 마스터 PIN만 묻습니다(빙고게임 기록 삭제). */
 function askPin(code,kind,title){
   return new Promise(res=>{
     const box=$("#pinAsk"),inp=$("#paIn"),prev=document.activeElement,m=kind==="master";
     $("#paTitle").textContent=m?"마스터 PIN 확인":"PIN 입력";
-    {const nm=`‘${title||"위험예지 빙고 훈련"}’ 강의`;$("#paMsg").textContent=m?`${nm}의 기록을 삭제하려면 마스터 PIN을 입력하세요.`:`${nm}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`}
+    {const nm=`‘${title||"위험예지 빙고 훈련"}’ 게임`;$("#paMsg").textContent=m?`${nm}의 기록을 삭제하려면 마스터 PIN을 입력하세요.`:`${nm}의 진행자 PIN 또는 마스터 PIN을 입력하세요.`}
     inp.placeholder=m?"마스터 PIN":"진행자 PIN 또는 마스터 PIN";inp.setAttribute("aria-label",inp.placeholder);
     inp.value="";box.hidden=false;inp.focus();
     const done=v=>{box.hidden=true;inp.value="";box.onclick=null;inp.onkeydown=null;$("#paOk").onclick=null;$("#paCancel").onclick=null;if(prev&&prev.focus)prev.focus();res(v)};
@@ -3919,9 +3918,9 @@ function askPin(code,kind,title){
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(inp.value)}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();done("")}};
   });
 }
-/* 진행 권한 받기: 이 PC가 이미 이 강의의 권한을 받은 적이 있으면 그대로 씁니다.
+/* 진행 권한 받기: 이 PC가 이미 이 게임의 권한을 받은 적이 있으면 그대로 씁니다.
    (보안 규칙은 권한 문서를 새로 만드는 것만 허용하고 고쳐 쓰는 것은 막기 때문에,
-    같은 강의에 두 번째로 PIN을 넣으면 PIN이 맞아도 거절되던 문제를 막습니다.) */
+    같은 빙고게임에 두 번째로 PIN을 넣으면 PIN이 맞아도 거절되던 문제를 막습니다.) */
 async function putClaim(code,pin){
   const ref=fdb.doc(`lectures/${code}/hostClaims/${UID}`);
   let had=false;try{had=(await ref.get()).exists}catch(e){}
@@ -3943,12 +3942,12 @@ const DEL_MS=window.KYT_DEL_MS||15000;
 const withT=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no({code:"timeout"}),ms))]);
 async function deleteLecture(L){
   const code=L.code,sids=[...new Set([...(L.sids||[]),L.sid].filter(Boolean))];
-  /* 지우는 동안 이 PC가 강의 문서를 다시 쓰지 않도록 먼저 연결을 끊음
+  /* 지우는 동안 이 PC가 빙고게임 문서를 다시 쓰지 않도록 먼저 연결을 끊음
      (예전에는 지운 뒤에 참가 현황·연결 신호가 늦게 저장되어 meta 문서만 남는 일이 있었음) */
   clearTimeout(rosterT);
   if(CODE===code){HOSTINFO={};saveHost();setCode("");G=null}
-  /* 먼저 ‘삭제 중’ 표시를 남기고 강의를 마감합니다(다른 PC·스마트폰도 신호를 멈춤).
-     삭제가 중간에 멈추면 강의 기록에 ‘삭제가 끝나지 않음’으로 보이고, ‘다시 삭제’만 할 수 있습니다.
+  /* 먼저 ‘삭제 중’ 표시를 남기고 빙고게임을 마감합니다(다른 PC·스마트폰도 신호를 멈춤).
+     삭제가 중간에 멈추면 빙고게임 기록에 ‘삭제가 끝나지 않음’으로 보이고, ‘다시 삭제’만 할 수 있습니다.
      - 인터넷이 끊겨 표시를 남기지 못하면 아무것도 지우지 않고 멈춥니다.
      - 보안 규칙을 새로 게시하지 않아 권한이 없을 때만 표시 없이 예전처럼 지웁니다. */
   try{await withT(fdb.doc(`lectures/${code}`).update({deleting:Date.now(),phase:"done",open:false,ended:L.ended||Date.now()}),DEL_MS)}
@@ -3963,7 +3962,7 @@ async function deleteLecture(L){
   try{const q=await fdb.collection(`lectures/${code}/hostClaims`).get();await Promise.all(q.docs.filter(d=>d.id!==UID).map(d=>del(`lectures/${code}/hostClaims/${d.id}`)))}catch(e){}
   try{const q=await fdb.collection(`lectures/${code}/masterOk`).get();await Promise.all(q.docs.filter(d=>d.id!==UID).map(d=>del(`lectures/${code}/masterOk/${d.id}`)))}catch(e){}
   await withT(fdb.doc(`lectures/${code}`).delete(),DEL_MS);
-  // 강의 문서를 지운 뒤에는 누구도 새로 쓸 수 없으므로, 그사이 다시 생긴 문서가 있으면 한 번 더 지움
+  // 빙고게임 문서를 지운 뒤에는 누구도 새로 쓸 수 없으므로, 그사이 다시 생긴 문서가 있으면 한 번 더 지움
   await wipe();
   await del(`lectures/${code}/hostClaims/${UID}`);
   await del(`lectures/${code}/masterOk/${UID}`);
@@ -3972,14 +3971,14 @@ async function deleteLecture(L){
 }
 async function histDelete(code){
   const L=HIST.find(x=>x.code===code);if(!L)return;
-  if(!confirm(L.deleting?`‘${L.title||"위험예지 빙고 훈련"}’은(는) 삭제가 끝나지 않은 강의입니다.\n남은 기록을 마저 삭제할까요?`
-    :`‘${L.title||"위험예지 빙고 훈련"}’ 기록을 삭제할까요?${L.open?"\n진행 중인 강의입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
-  // 삭제는 강의를 연 PC여도 항상 마스터 PIN을 확인합니다.
+  if(!confirm(L.deleting?`‘${L.title||"위험예지 빙고 훈련"}’은(는) 삭제가 끝나지 않은 게임입니다.\n남은 기록을 마저 삭제할까요?`
+    :`‘${L.title||"위험예지 빙고 훈련"}’ 기록을 삭제할까요?${L.open?"\n진행 중인 게임입니다. 참가자 화면도 끊깁니다.":""}\n판과 호출 기록까지 모두 지워지며 되돌릴 수 없습니다.`))return;
+  // 삭제는 빙고게임을 연 PC여도 항상 마스터 PIN을 확인합니다.
   const pin=(await askPin(code,"master",L.title)).normalize("NFC").trim();if(!pin)return;
   try{await putMaster(code,pin)}
   catch(e){toast(e&&e.code==="permission-denied"?"마스터 PIN이 맞지 않습니다. 대소문자와 띄어쓰기까지 똑같이 입력해 주세요.":"확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");return}
-  toast("강의 기록을 삭제하는 중입니다…");
-  try{await deleteLecture(L);toast("강의 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 보안 규칙(firestore.rules)을 새로 게시했는지 확인해 주세요.":"삭제가 끝나지 않았습니다. 인터넷 연결을 확인한 뒤 강의 기록에서 ‘다시 삭제’를 눌러 주세요.")}
+  toast("빙고게임 기록을 삭제하는 중입니다…");
+  try{await deleteLecture(L);toast("빙고게임 기록을 삭제했습니다.")}catch(e){toast(e&&e.code==="permission-denied"?"삭제 권한이 없습니다. 보안 규칙(firestore.rules)을 새로 게시했는지 확인해 주세요.":"삭제가 끝나지 않았습니다. 인터넷 연결을 확인한 뒤 빙고게임 기록에서 ‘다시 삭제’를 눌러 주세요.")}
   loadHist();
 }
 $("#lecHist").addEventListener("toggle",()=>{if($("#lecHist").open)loadHist()});
@@ -3988,24 +3987,24 @@ $("#lecHistBody").addEventListener("click",e=>{const b=e.target.closest("button"
   if(b.dataset.lhview)showHistDetail(b.dataset.lhview,b.closest(".lh-row").querySelector(".lh-detail"));
   else if(b.dataset.lhdel)histDelete(b.dataset.lhdel);
   else if(b.dataset.lhload)histLoad(b.dataset.lhload)});
-/* 강의 기록에서 불러오기
-   - 빙고를 완료한 강의: 교수 화면에서만 결과를 봄(스마트폰에는 보이지 않음)
-   - 빙고를 완료하지 못하고 마감한 강의: 다시 열어 이어서 진행(스마트폰도 그 강의를 다시 불러와 입력·호출) */
-/* 강의 불러오기(강의 기록에서 고르거나 ‘이어서 진행’을 누를 때 이 함수를 씁니다)
-   - 불러온 강의가 기준입니다. 위쪽 사례·핵심원인·진행 방식은 불러온 강의에 자동으로 맞춥니다.
-   - 확인 창 하나에 ‘지금 하던 것’(진행 중인 강의 또는 이 PC에서 짜던 판)과 ‘불러올 강의’를 나란히 보여 줍니다.
-   - 빙고를 마친 강의는 결과만 이 화면에서 보고, 빙고를 마치지 못하고 마감한 강의는 다시 열어 이어서 진행합니다. */
+/* 빙고게임 기록에서 불러오기
+   - 빙고를 완료한 게임: 교수 화면에서만 결과를 봄(스마트폰에는 보이지 않음)
+   - 빙고를 완료하지 못하고 마감한 게임: 다시 열어 이어서 진행(스마트폰도 그 게임을 다시 불러와 입력·호출) */
+/* 빙고게임 불러오기(빙고게임 기록에서 고르거나 ‘이어서 진행’을 누를 때 이 함수를 씁니다)
+   - 불러온 게임이 기준입니다. 위쪽 사례·핵심원인·진행 방식은 불러온 게임에 자동으로 맞춥니다.
+   - 확인 창 하나에 ‘지금 하던 것’(진행 중인 게임 또는 이 PC에서 짜던 판)과 ‘불러올 게임’을 나란히 보여 줍니다.
+   - 빙고를 마친 게임은 결과만 이 화면에서 보고, 빙고를 마치지 못하고 마감한 게임은 다시 열어 이어서 진행합니다. */
 const lecCase=x=>plainCase(x.ci||0,x.src==="hazmap"&&x.mcase?(x.mcase.coreThemes[x.ti]||{}).name:"");
 const lecName=(x,code)=>`‘${x.title||"위험예지 빙고 훈련"}’`;
 async function openLecture(L,claimed){
-  if(L.deleting){toast("삭제가 끝나지 않은 강의라 열 수 없습니다. 강의 기록에서 ‘다시 삭제’를 눌러 주세요.");return}
+  if(L.deleting){toast("삭제가 끝나지 않은 게임이라 열 수 없습니다. 빙고게임 기록에서 ‘다시 삭제’를 눌러 주세요.");return}
   const code=L.code,done=L.phase==="done",complete=lecDone(L);
   const lines=[];let warn="";
-  if(liveActive()&&CODE!==code){lines.push(`· 지금 진행 중: ${lecName(LIVE,CODE)}`,`   ${lecCase(LIVE)}`);warn="지금 강의는 마감됩니다(강의 기록에서 이어서 진행할 수 있습니다).\n"}
+  if(liveActive()&&CODE!==code){lines.push(`· 지금 진행 중: ${lecName(LIVE,CODE)}`,`   ${lecCase(LIVE)}`);warn="지금 빙고게임은 마감됩니다(빙고게임 기록에서 이어서 진행할 수 있습니다).\n"}
   else if(hasPicks()){lines.push(`· 이 PC에서 짜던 판: ${plainCase(S.ci,S.cfg.src==="hazmap"?caseHz(S.ci).coreThemes[S.ti].name:"")}`);warn="이 PC에서 짜던 판은 지워집니다.\n"}
-  lines.push(`· 불러올 강의: ${lecName(L,code)}`,`   ${lecCase(L)}`);
-  const what=done?(complete?"빙고를 마친 강의라 결과만 이 화면에서 봅니다(스마트폰에는 보이지 않습니다).":"마감된 강의라 다시 열어 하던 판에서 이어서 진행합니다(스마트폰에서도 다시 열립니다).")
-    :"이 PC에서 이 강의를 이어서 진행합니다.";
+  lines.push(`· 불러올 게임: ${lecName(L,code)}`,`   ${lecCase(L)}`);
+  const what=done?(complete?"빙고를 마친 게임이라 결과만 이 화면에서 봅니다(스마트폰에는 보이지 않습니다).":"마감된 게임이라 다시 열어 하던 판에서 이어서 진행합니다(스마트폰에서도 다시 열립니다).")
+    :"이 PC에서 이 게임을 이어서 진행합니다.";
   if(!confirm(`${lines.join("\n")}\n\n${what}\n${warn}불러올까요?`))return;
   if(!claimed&&!lecMine(L)&&!await claimFor(code,L.title))return;
   if(CODE!==code)await closeCurrentLecture();
@@ -4016,7 +4015,7 @@ async function openLecture(L,claimed){
   }
   HOSTREV=done&&complete?code:"";
   const mine=L.hostUid===UID;HOSTINFO={code,title:L.title||"",pin:mine&&HOSTINFO.code===code?HOSTINFO.pin:"",claimed:!mine};saveHost();
-  LOADSYNC=code;lcKey="";   // 연결되면 확인 창 없이 위쪽 사례·진행 방식을 이 강의에 맞춤
+  LOADSYNC=code;lcKey="";   // 연결되면 확인 창 없이 위쪽 사례·진행 방식을 이 게임에 맞춤
   revealCount=-1;bingoSeen=-1;G=null;setCode(code);S.cfg.fill="phone";$("#lecHist").open=false;
   toast(`${lecName(L,code)}을(를) 불러왔습니다. `+(HOSTREV?"결과는 이 화면에서만 보입니다.":done?"스마트폰에서도 이어서 진행할 수 있습니다.":"이 PC에서 이어서 진행합니다."));
   window.scrollTo({top:$("#livePanel").offsetTop-80,behavior:"smooth"});
@@ -4108,7 +4107,7 @@ const OPMSG={dup:"이미 판에 들어 있는 항목입니다.",full:"판이 다
   done:"대표폰이 ‘입력 완료’를 눌러 지금은 고칠 수 없습니다.",late:"판 짜기 시간이 끝났습니다.",notfull:"판을 다 채운 뒤에 ‘입력 완료’를 누를 수 있습니다.",none:"판을 찾을 수 없습니다. 다시 참가해 주세요."};
 async function tOp(op){
   if(!TB||!LIVE||!myBid||!fdb)return;
-  if(teamHalted()){toast("강의가 중단되어 지금은 입력할 수 없습니다.");return}
+  if(teamHalted()){toast("빙고게임이 중단되어 지금은 입력할 수 없습니다.");return}
   if(hbVerify&&liveActive()){toast("교수님 화면과 연결을 확인하는 중입니다. 잠시 뒤 다시 해 주세요.");return}
   if((op.t==="fill"||op.t==="clear"||op.t==="done")&&viewOnly())return;
   const ref=bRef(LIVE.sid,myBid);
@@ -4135,30 +4134,30 @@ function tSave(now){if(!TB||isView())return;tDirty=true;clearTimeout(tTimer);
 function tBoardObj(){if(TB&&!TB.w)TB.w={};return TB}
 function renderTeam(){
   if(ROLE!=="team")return;
-  {const tb=$("#tab-team"),nm=!LIVE?"빙고 훈련":LIVE.mode==="solo"?"나의 빙고":"우리 조 빙고";if(tb&&tb.lastChild&&tb.lastChild.textContent!==nm)tb.lastChild.textContent=nm}   // 탭 이름: 조별전 ‘우리 조 빙고’, 개인전 ‘나의 빙고’, 강의 정보를 받기 전에는 ‘빙고 훈련’
+  {const tb=$("#tab-team"),nm=!LIVE?"빙고 훈련":LIVE.mode==="solo"?"나의 빙고":"우리 조 빙고";if(tb&&tb.lastChild&&tb.lastChild.textContent!==nm)tb.lastChild.textContent=nm}   // 탭 이름: 조별전 ‘우리 조 빙고’, 개인전 ‘나의 빙고’, 빙고게임 정보를 받기 전에는 ‘빙고 훈련’
   applyCaseLock();applyHalt();
   const L=LIVE,show=id=>["tWait","tJoin","tPick","tPlay"].forEach(k=>$("#"+k).hidden=k!==id),badge=$("#teamBadge");
   if(!FB){show("tWait");$("#tWait").innerHTML="<b>실시간 서버에 연결되지 않은 화면입니다.</b>";badge.hidden=true;return}
   if(!L||!CODE)$("#tClosed").hidden=true;
   const reset=()=>{badge.hidden=true;$("#tTitle").textContent="빙고 훈련";$("#tLead").textContent=""};
-  if(!CODE){reset();show("tWait");   // 빙고는 QR 코드로만 참가(스마트폰에서 강의 목록을 고르지 않음)
+  if(!CODE){reset();show("tWait");   // 빙고는 QR 코드로만 참가(스마트폰에서 빙고게임 목록을 고르지 않음)
     $("#tWait").innerHTML=`<b>교수님 화면의 QR 코드를 찍어 참가하세요.</b><span class="hint">빙고 훈련은 QR 코드로만 참가할 수 있습니다.</span>`;return}
-  if(!LIVE_LOADED){reset();show("tWait");$("#tWait").innerHTML="<b>강의 정보를 불러오는 중입니다…</b>";return}
-  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>강의를 찾을 수 없습니다.</b><span class="hint">교수님 화면의 QR 코드를 다시 찍어 주세요.</span>`;return}
+  if(!LIVE_LOADED){reset();show("tWait");$("#tWait").innerHTML="<b>빙고게임 정보를 불러오는 중입니다…</b>";return}
+  if(!L){reset();show("tJoin");$("#tJoinBody").innerHTML=`<b>빙고게임을 찾을 수 없습니다.</b><span class="hint">교수님 화면의 QR 코드를 다시 찍어 주세요.</span>`;return}
   // 교수 화면과의 연결 상태를 아직 확인하지 못했으면(접속 직후, 화면을 오래 껐다 켠 직후) 참가·입력 화면을 열지 않음
   if(liveActive()&&(!hbKnown||hbVerify)){reset();show("tWait");$("#tClosed").hidden=true;if(hbVerify){clearTimeout(tTimer);tDirty=false;tPending=-1}$("#tWait").innerHTML="<b>교수님 화면과 연결을 확인하는 중입니다…</b>";return}
-  // 강의가 중단되면 모든 메뉴(상황파악·위험예지·위험요인 전개도)와 입력을 막고, 교수님이 ‘이어서 진행’을 고를 때까지 이 안내만 보여 줌
+  // 빙고게임이 중단되면 모든 메뉴(상황파악·위험예지·위험요인 전개도)와 입력을 막고, 교수님이 ‘이어서 진행’을 고를 때까지 이 안내만 보여 줌
   if(liveActive()&&hbDown){reset();show("tWait");clearTimeout(tTimer);tDirty=false;tPending=-1;
-    const cl=$("#tClosed");cl.hidden=false;cl.innerHTML=`<b>강의가 중단되었습니다.</b> 교수님이 ‘이어서 진행’을 선택할 때까지 모든 메뉴와 입력을 쓸 수 없습니다.`;
-    $("#tWait").innerHTML=`<b>강의가 중단되었습니다.</b><span class="hint">교수님 화면과 연결이 끊겼습니다. 교수님이 강의를 다시 열어 ‘이어서 진행’을 선택하면 하던 판에서 자동으로 이어집니다. 이 화면을 닫지 말고 기다려 주세요.</span>`;
-    if(renderTeam.hb!==true)toast("교수님 화면과 연결이 끊겨 강의가 중단되었습니다.");renderTeam.hb=true;return}
+    const cl=$("#tClosed");cl.hidden=false;cl.innerHTML=`<b>빙고게임이 중단되었습니다.</b> 교수님이 ‘이어서 진행’을 선택할 때까지 모든 메뉴와 입력을 쓸 수 없습니다.`;
+    $("#tWait").innerHTML=`<b>빙고게임이 중단되었습니다.</b><span class="hint">교수님 화면과 연결이 끊겼습니다. 교수님이 빙고게임을 다시 열어 ‘이어서 진행’을 선택하면 하던 판에서 자동으로 이어집니다. 이 화면을 닫지 말고 기다려 주세요.</span>`;
+    if(renderTeam.hb!==true)toast("교수님 화면과 연결이 끊겨 빙고게임이 중단되었습니다.");renderTeam.hb=true;return}
   renderTeam.hb=false;
   {const cl=$("#tClosed"),was=renderTeam.phase;renderTeam.phase=L.phase;
     cl.hidden=L.phase!=="done";
     if(L.phase==="done"){clearTimeout(tTimer);tDirty=false;
-      cl.innerHTML=`<b>강의가 종료되었습니다.</b> 진행하던 빙고는 모두 중단되었습니다.`;
-      if(was==="pick"||was==="play")toast("강의가 종료되었습니다.")}
-    else if(was==="done"&&(L.phase==="pick"||L.phase==="play"))toast("교수님이 강의를 다시 열었습니다. 하던 판에서 이어서 진행합니다.")}
+      cl.innerHTML=`<b>빙고게임이 종료되었습니다.</b> 진행하던 빙고는 모두 중단되었습니다.`;
+      if(was==="pick"||was==="play")toast("빙고게임이 종료되었습니다.")}
+    else if(was==="done"&&(L.phase==="pick"||L.phase==="play"))toast("교수님이 빙고게임을 다시 열었습니다. 하던 판에서 이어서 진행합니다.")}
   if(!liveActive()){reset();show("tWait");
     $("#tWait").innerHTML=L.phase==="done"?`<b>수고하셨습니다.</b>`
       :"<b>교수님이 훈련을 시작하기를 기다리는 중입니다.</b><span class='hint'>시작되면 이 화면에 참가 버튼이 나타납니다. 화면을 닫지 말고 기다려 주세요.</span>";return}
@@ -4265,7 +4264,6 @@ $("#tGrid").onclick=e=>{if(!TB||TB.done)return;const b=tBoardObj(),x=e.target.cl
 $("#tFill").onclick=()=>{if(viewOnly())return;const b=tBoardObj();if(!b)return;if(b.picks.filter(x=>!x).length>FILL_MAX){toast(`남은 칸이 ${FILL_MAX}칸 이하일 때 쓸 수 있습니다.`);return}const rest=shuffle(pool().filter(t=>!b.picks.includes(t)));if(shared()){tOp({t:"fill",rest});return}b.picks=b.picks.map(t=>t||rest.shift()||null);normW(b);tSave();renderTeamPick()};
 $("#tClear").onclick=()=>{if(viewOnly())return;if(!TB||!confirm("판의 칸을 전체 비울까요?"))return;if(shared()){tOp({t:"clear"});return}TB.picks=TB.picks.map(()=>null);TB.w={};tSel=-1;tSave();renderTeamPick()};
 $("#tDone").onclick=()=>{if(viewOnly())return;if(!TB)return;if(!TB.done&&!TB.picks.every(Boolean))return;if(shared()){tOp({t:"done",on:!TB.done});return}TB.done=!TB.done;normW(tBoardObj());tSave(true);renderTeamPick()};
-document.querySelectorAll("[data-go2]").forEach(b=>b.onclick=()=>go(b.dataset.go2));
 function renderTeamPlay(){
   ["tWait","tJoin","tPick"].forEach(k=>$("#"+k).hidden=true);$("#tPlay").hidden=false;
   const L=LIVE;buildLiveG(MINE?[MINE]:[]);
@@ -4311,7 +4309,7 @@ function onLive(){
     if(!ADMIN)return;
     if(!liveInit&&liveActive())S.cfg.fill="phone";
     liveInit=true;
-    {const lk=lockedTi();if(onLive.lk!==lk){onLive.lk=lk;renderKYT();renderHazmap()}}   // 강의 시작·종료에 맞춰 핵심원인 잠금을 다시 그림
+    {const lk=lockedTi();if(onLive.lk!==lk){onLive.lk=lk;renderKYT();renderHazmap()}}   // 빙고게임 시작·종료에 맞춰 핵심원인 잠금을 다시 그림
     if(S.cfg.fill==="phone"){if(LIVE&&(LIVE.phase==="play"||(LIVE.phase==="done"&&HOSTREV===CODE)))buildLiveG(BOARDS);else if(G&&G.live)G=null;renderBingo()}
   }else renderTeam();
 }
@@ -4341,7 +4339,7 @@ function initLive(){
 
 /* 빙고 화면 위쪽의 훈련 사례 카드: 빙고의 목적(위험요인 인식·위험 예지)이 먼저 보이도록 */
 function caseCard(){
-  /* 교수 PC는 위쪽에서 고른 사례를 보여 준다. 열린 강의와 사례·핵심원인이 같을 때만 강의 내용을 쓴다. */
+  /* 교수 PC는 위쪽에서 고른 사례를 보여 준다. 열린 게임과 사례·핵심원인이 같을 때만 빙고게임 내용을 쓴다. */
   const hostLive=!!(LIVE&&LIVE.sid&&ROLE!=="team"&&((G&&G.live)||(S.cfg.fill==="phone"&&liveActive())));
   const same=hostLive&&liveSame();
   const live=!!(LIVE&&LIVE.sid&&(ROLE==="team"||same));
@@ -4350,7 +4348,7 @@ function caseCard(){
   const img=DATA.IMG&&DATA.IMG[ci];
   const clean=s=>s.replace(/^[※\s]+/,"").replace(/^\(모두 함께\)\s*/,"");
   const sub=th.subGoals.map(x=>x.name).slice(0,8);
-  const warn=hostLive&&!same?`<div class="cc-warn" role="status">지금 열린 강의 ‘${esc(LIVE.title||LIVE.code||"")}’은(는) ${liveCaseLabel()}으로 진행 중이고, 참가자 스마트폰에도 이 강의가 보입니다. 위에서 고른 사례와 다르니 어떻게 할지 골라 주세요.${liveMine()?`<div class="row"><button class="btn primary" data-lc="keep">열린 강의 계속 진행</button><button class="btn" data-lc="new">열린 강의 마감하고 새로 개설</button></div>`:""}</div>`:"";
+  const warn=hostLive&&!same?`<div class="cc-warn" role="status">지금 열린 게임 ‘${esc(LIVE.title||LIVE.code||"")}’은(는) ${liveCaseLabel()}으로 진행 중이고, 참가자 스마트폰에도 이 게임이 보입니다. 위에서 고른 사례와 다르니 어떻게 할지 골라 주세요.${liveMine()?`<div class="row"><button class="btn primary" data-lc="keep">열린 게임 계속 진행</button><button class="btn" data-lc="new">열린 게임 마감하고 새로 개설</button></div>`:""}</div>`:"";
   return `${warn}<article class="casecard">${img?`<img src="${img}" alt="${esc(caseShort(ci))} 상황 그림">`:""}
     <div class="cc-body">
       <div><span class="eyebrow">훈련 사례</span><h2 class="case-label">${caseLabel(ci,src==="hazmap"?th.name:"")}</h2></div>
@@ -4364,16 +4362,16 @@ function caseCard(){
     </div></article>`;
 }
 
-/* ── 열린 강의와 위쪽에서 고른 사례가 다를 때: 계속 진행 / 마감하고 새로 개설 ── */
+/* ── 열린 게임과 위쪽에서 고른 사례가 다를 때: 계속 진행 / 마감하고 새로 개설 ── */
 const liveMine=()=>!!(LIVE&&(LIVE.hostUid===UID||HOSTINFO.claimed&&HOSTINFO.code===CODE));
 const liveSame=()=>!!(LIVE&&LIVE.ci===S.ci&&(LIVE.src!=="hazmap"||LIVE.ti===S.ti));
 const liveCaseLabel=()=>caseLabel(LIVE.ci,LIVE.src==="hazmap"&&LIVE.mcase?(LIVE.mcase.coreThemes[LIVE.ti]||{}).name:"");
 let lcKey="",LOADSYNC="",BOOTCODE="",LCMODE="";
-/* 교수 PC가 강의에 연결될 때 처음 한 번, 위쪽 사례·핵심원인·진행 방식을 그 강의에 맞춥니다.
-   - 앱을 새로 열었을 때(새로 고침, 오랜만에 실행): 끝내지 않은 강의가 있으면 창을 띄워
-     ‘이어서 진행’과 ‘마감하고 새 강의 개설’ 중에서 고르게 합니다.
-   - 강의 기록에서 불러올 때: 이미 고른 것이므로 묻지 않습니다.
-   - ‘어느 사례로 진행할까요?’ 창은 강의 도중 위쪽 사례를 직접 바꿨을 때만 뜹니다(caseSel.onchange). */
+/* 교수 PC가 빙고게임에 연결될 때 처음 한 번, 위쪽 사례·핵심원인·진행 방식을 그 게임에 맞춥니다.
+   - 앱을 새로 열었을 때(새로 고침, 오랜만에 실행): 끝내지 않은 게임이 있으면 창을 띄워
+     ‘이어서 진행’과 ‘마감하고 새 빙고게임 개설’ 중에서 고르게 합니다.
+   - 빙고게임 기록에서 불러올 때: 이미 고른 것이므로 묻지 않습니다.
+   - ‘어느 사례로 진행할까요?’ 창은 빙고게임 도중 위쪽 사례를 직접 바꿨을 때만 뜹니다(caseSel.onchange). */
 function askLiveChoice(){
   if(!ADMIN||ROLE!=="host")return;
   if(!LIVE||!LIVE.sid){releaseHold(false);return}
@@ -4384,18 +4382,18 @@ function askLiveChoice(){
   const diff=!liveSame();syncHostToLive();
   if(boot&&!quiet&&liveActive()&&liveMine()){openResumeChoice();return}   // 고를 때까지 보류 유지(RESUME_HOLD)
   releaseHold(true);
-  if(diff&&!quiet)toast(`화면을 진행 중이던 강의 ‘${LIVE.title||"위험예지 빙고 훈련"}’(사례 ${LIVE.ci+1})에 맞췄습니다.`);
+  if(diff&&!quiet)toast(`화면을 진행 중이던 게임 ‘${LIVE.title||"위험예지 빙고 훈련"}’(사례 ${LIVE.ci+1})에 맞췄습니다.`);
 }
-/* 앱을 새로 열었을 때 끝내지 않은 강의가 있으면 띄우는 창 */
+/* 앱을 새로 열었을 때 끝내지 않은 게임이 있으면 띄우는 창 */
 function openResumeChoice(why){
   const L=LIVE,calls=(L.calls||[]).length;LCMODE="resume";
   // 스마트폰이 바로 중단 상태가 되도록 표시(‘이어서 진행’을 고르면 다음 신호에서 지워짐)
   if(resumeHeld())hbRef().set({at:Date.now(),sid:L.sid,hold:true}).catch(()=>{});
-  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">${why==="gap"?"강의 화면의 연결이 2분 넘게 끊겼습니다":"진행 중이던 강의가 있습니다"}</span><h2 id="lcTitle">${why==="gap"?"연결이 끊긴 동안 참가자 스마트폰은 중단 상태가 되었습니다":"기존에 개설되어 진행되고 있던 강의가 다음과 같이 있습니다"}</h2></div></div>
-    <div class="lc-info"><span>강의 이름</span><b>${esc(L.title||"위험예지 빙고 훈련")}</b><div class="case-label">${liveCaseLabel()}</div>
+  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">${why==="gap"?"빙고게임 화면의 연결이 2분 넘게 끊겼습니다":"진행 중이던 게임이 있습니다"}</span><h2 id="lcTitle">${why==="gap"?"연결이 끊긴 동안 참가자 스마트폰은 중단 상태가 되었습니다":"기존에 개설되어 진행되고 있던 게임이 다음과 같이 있습니다"}</h2></div></div>
+    <div class="lc-info"><span>빙고게임 이름</span><b>${esc(L.title||"위험예지 빙고 훈련")}</b><div class="case-label">${liveCaseLabel()}</div>
       <span>${L.mode==="team"?`조별전 ${L.teams}개 조`:"개인전"} · ${L.size}×${L.size} · 목표 ${L.target}줄 · ${L.phase==="pick"?"판 짜는 중":`빙고 진행 중(호출 ${calls}번)`}</span>
       <span>개설 ${fmtDT(L.opened)} · 마지막 활동 ${fmtDT(L.alive)}</span></div>
-    <p style="margin:0">이 강의를 이어서 진행할까요, 아니면 이 강의를 마감하고 상황파악부터 새로 시작할까요? 마감한 강의는 나중에 강의 기록에서 이어서 진행할 수 있습니다.</p>
+    <p style="margin:0">이 게임을 이어서 진행할까요, 아니면 이 게임을 마감하고 상황파악부터 새로 시작할까요? 마감한 게임은 나중에 빙고게임 기록에서 이어서 진행할 수 있습니다.</p>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-lc="fresh">마감하고 새로 시작</button><button class="btn primary" data-lc="resume">이어서 진행</button></div>`;
   $("#liveChoice").hidden=false;const r=$("#lcBody [data-lc=resume]");if(r)r.focus();
 }
@@ -4404,13 +4402,13 @@ function dismissLiveChoice(){if(LCMODE==="resume"){toast("‘이어서 진행’
 function openLiveChoice(){
   if(!liveActive())return;
   const L=LIVE,now=caseLabel(S.ci,S.cfg.src==="hazmap"?caseHz(S.ci).coreThemes[S.ti].name:"");
-  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">진행 중인 강의가 있습니다</span><h2 id="lcTitle">어느 사례로 진행할까요?</h2></div><button class="btn ghost" data-lc="later">나중에</button></div>
-    <div class="lc-info lc-row"><div><span>열린 강의 ‘${esc(L.title||"위험예지 빙고 훈련")}’ · ${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · 참가자 화면에 보이는 사례</span><div class="case-label">${liveCaseLabel()}</div></div><button class="btn primary" data-lc="keep">이 강의 계속</button></div>
-    <div class="lc-info lc-row"><div><span>위쪽에서 지금 고른 사례 · 고르면 열린 강의는 마감됩니다</span><div class="case-label">${now}</div></div><button class="btn" data-lc="new">이 사례로 새 강의</button></div>`;
+  $("#lcBody").innerHTML=`<div class="lc-head"><div><span class="eyebrow">진행 중인 게임이 있습니다</span><h2 id="lcTitle">어느 사례로 진행할까요?</h2></div><button class="btn ghost" data-lc="later">나중에</button></div>
+    <div class="lc-info lc-row"><div><span>열린 게임 ‘${esc(L.title||"위험예지 빙고 훈련")}’ · ${L.phase==="pick"?"판 짜는 중":"빙고 진행 중"} · 참가자 화면에 보이는 사례</span><div class="case-label">${liveCaseLabel()}</div></div><button class="btn primary" data-lc="keep">이 게임 계속</button></div>
+    <div class="lc-info lc-row"><div><span>위쪽에서 지금 고른 사례 · 고르면 열린 게임은 마감됩니다</span><div class="case-label">${now}</div></div><button class="btn" data-lc="new">이 사례로 새 게임</button></div>`;
   LCMODE="choice";$("#liveChoice").hidden=false;const k=$("#lcBody [data-lc=keep]");if(k)k.focus();
 }
 function closeLiveChoice(){$("#liveChoice").hidden=true;LCMODE=""}
-function syncHostToLive(){   // 교수 화면의 사례·핵심원인·진행 방식을 열린 강의에 맞춤
+function syncHostToLive(){   // 교수 화면의 사례·핵심원인·진행 방식을 열린 게임에 맞춤
   if(!LIVE)return;const L=LIVE;
   S.ci=L.ci;S.ti=L.ti||0;S.sub=0;caseSel.value=S.ci;
   Object.assign(S.cfg,{mode:L.mode,src:L.src,size:L.size,target:L.target});if(L.teams)S.cfg.teams=L.teams;
@@ -4418,28 +4416,28 @@ function syncHostToLive(){   // 교수 화면의 사례·핵심원인·진행 �
 }
 async function liveChoice(act){
   if(act==="later"){closeLiveChoice();return}
-  if(!liveActive()||!liveMine()){releaseHold(false);closeLiveChoice();toast("이 PC에는 이 강의의 진행 권한이 없습니다.");return}
+  if(!liveActive()||!liveMine()){releaseHold(false);closeLiveChoice();toast("이 PC에는 이 게임의 진행 권한이 없습니다.");return}
   closeLiveChoice();
   if(act==="resume"||act==="keep")releaseHold(true);else RESUME_HOLD="";   // ‘이어서 진행’을 고른 뒤에야 연결 신호를 보내 스마트폰을 풀어 줌
-  if(act==="keep"){syncHostToLive();toast("열린 강의의 사례로 화면을 맞췄습니다. 이어서 진행하세요.");return}
+  if(act==="keep"){syncHostToLive();toast("열린 게임의 사례로 화면을 맞췄습니다. 이어서 진행하세요.");return}
   if(act==="fresh"){   // 앱을 새로 열었을 때의 확인 창에서 ‘마감하고 새로 시작’: 처음 단계(상황파악)부터
     await closeCurrentLecture();
-    // 마감한 강의와의 연결을 끊고 강의 개설 입력값(강의 이름·조 이름)도 비움
-    //   (그대로 두면 다음에 새로 고침했을 때 마감한 강의의 이름이 다시 채워짐)
+    // 마감한 게임과의 연결을 끊고 빙고게임 개설 입력값(빙고게임 이름·조 이름)도 비움
+    //   (그대로 두면 다음에 새로 고침했을 때 마감한 게임의 이름이 다시 채워짐)
     HOSTREV="";HOSTINFO={};saveHost();setCode("");LECDRAFT={title:"",teams:4,names:[]};
     // 새로 시작은 항상 처음 상태로: 사례 1, 처음 설정(조별전·위험요인 전개도 문항·5×5·4개 조·목표 3줄)
     S.ci=0;S.ti=0;S.sub=0;caseSel.value=0;
     Object.assign(S.cfg,{mode:"team",src:"hazmap",size:5,teams:4,target:3,weight:false,fill:"phone"});
     renderAll();newGame();
     go("w5");window.scrollTo({top:0,behavior:"smooth"});
-    toast("강의를 마감했습니다. 사례 1의 상황파악부터 새로 시작합니다. 다른 사례는 위쪽에서 고를 수 있습니다.");
+    toast("빙고게임을 마감했습니다. 사례 1의 상황파악부터 새로 시작합니다. 다른 사례는 위쪽에서 고를 수 있습니다.");
     return}
-  if(act==="resume"){syncHostToLive();go("bingo");toast(`‘${LIVE.title||"위험예지 빙고 훈련"}’ 강의를 이어서 진행합니다.`);
+  if(act==="resume"){syncHostToLive();go("bingo");toast(`‘${LIVE.title||"위험예지 빙고 훈련"}’ 게임을 이어서 진행합니다.`);
     setTimeout(()=>{const p=$("#livePanel");if(p)p.scrollIntoView({behavior:"smooth",block:"start"})},300);return}
   if(act==="new"){
     await closeCurrentLecture();
     go("bingo");
-    toast("열린 강의를 마감했습니다. 강의 이름을 확인하고 ‘강의 개설’을 누르세요.");
+    toast("열린 게임을 마감했습니다. 빙고게임 이름을 확인하고 ‘빙고게임 개설’을 누르세요.");
     setTimeout(()=>{const p=$("#livePanel");if(p)p.scrollIntoView({behavior:"smooth",block:"start"});const t=$("#lvTitle");if(t)t.focus({preventScroll:true})},700);
   }
 }
